@@ -1,0 +1,75 @@
+<%- include('partials/head', { title: 'Historia clínica | TomesVet' }) %>
+<%- include('partials/nav') %>
+
+<main class="container py-5">
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Nueva historia clínica</h4>
+          <form action="/historia-clinica" method="POST" class="d-grid gap-3">
+            <div>
+              <label class="form-label">Mascota</label>
+              <select class="form-select" name="mascota_id" required>
+                <option value="" disabled selected>Selecciona una mascota</option>
+                <% mascotas.forEach((mascota) => { %>
+                  <option value="<%= mascota.id %>"><%= mascota.nombre %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Fecha</label>
+              <input class="form-control" type="date" name="fecha" required />
+            </div>
+            <div>
+              <label class="form-label">Motivo</label>
+              <input class="form-control" type="text" name="motivo" required />
+            </div>
+            <div>
+              <label class="form-label">Diagnóstico</label>
+              <textarea class="form-control" name="diagnostico" rows="2" required></textarea>
+            </div>
+            <div>
+              <label class="form-label">Tratamiento</label>
+              <textarea class="form-control" name="tratamiento" rows="2" required></textarea>
+            </div>
+            <button class="btn btn-primary" type="submit">Guardar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Historial clínico</h4>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Mascota</th>
+                  <th>Fecha</th>
+                  <th>Motivo</th>
+                  <th>Diagnóstico</th>
+                  <th>Tratamiento</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% historias.forEach((historia) => { %>
+                  <tr>
+                    <td><%= historia.mascota_nombre %></td>
+                    <td><%= historia.fecha %></td>
+                    <td><%= historia.motivo %></td>
+                    <td><%= historia.diagnostico %></td>
+                    <td><%= historia.tratamiento %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

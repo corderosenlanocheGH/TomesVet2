@@ -1,0 +1,75 @@
+<%- include('partials/head', { title: 'Mascotas | TomesVet' }) %>
+<%- include('partials/nav') %>
+
+<main class="container py-5">
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Nueva mascota</h4>
+          <form action="/mascotas" method="POST" class="d-grid gap-3">
+            <div>
+              <label class="form-label">Nombre</label>
+              <input class="form-control" type="text" name="nombre" required />
+            </div>
+            <div>
+              <label class="form-label">Especie</label>
+              <input class="form-control" type="text" name="especie" required />
+            </div>
+            <div>
+              <label class="form-label">Raza</label>
+              <input class="form-control" type="text" name="raza" />
+            </div>
+            <div>
+              <label class="form-label">Fecha de nacimiento</label>
+              <input class="form-control" type="date" name="fecha_nacimiento" />
+            </div>
+            <div>
+              <label class="form-label">Cliente</label>
+              <select class="form-select" name="cliente_id" required>
+                <option value="" disabled selected>Selecciona un cliente</option>
+                <% clientes.forEach((cliente) => { %>
+                  <option value="<%= cliente.id %>"><%= cliente.nombre %></option>
+                <% }) %>
+              </select>
+            </div>
+            <button class="btn btn-primary" type="submit">Guardar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Mascotas registradas</h4>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Especie</th>
+                  <th>Raza</th>
+                  <th>Fecha nacimiento</th>
+                  <th>Cliente</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% mascotas.forEach((mascota) => { %>
+                  <tr>
+                    <td><%= mascota.nombre %></td>
+                    <td><%= mascota.especie %></td>
+                    <td><%= mascota.raza || '-' %></td>
+                    <td><%= mascota.fecha_nacimiento || '-' %></td>
+                    <td><%= mascota.cliente_nombre %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,64 @@
+<%- include('partials/head', { title: 'Clientes | TomesVet' }) %>
+<%- include('partials/nav') %>
+
+<main class="container py-5">
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Nuevo cliente</h4>
+          <form action="/clientes" method="POST" class="d-grid gap-3">
+            <div>
+              <label class="form-label">Nombre completo</label>
+              <input class="form-control" type="text" name="nombre" required />
+            </div>
+            <div>
+              <label class="form-label">Teléfono</label>
+              <input class="form-control" type="text" name="telefono" required />
+            </div>
+            <div>
+              <label class="form-label">Email</label>
+              <input class="form-control" type="email" name="email" />
+            </div>
+            <div>
+              <label class="form-label">Dirección</label>
+              <input class="form-control" type="text" name="direccion" />
+            </div>
+            <button class="btn btn-primary" type="submit">Guardar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Clientes</h4>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Teléfono</th>
+                  <th>Email</th>
+                  <th>Dirección</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% clientes.forEach((cliente) => { %>
+                  <tr>
+                    <td><%= cliente.nombre %></td>
+                    <td><%= cliente.telefono %></td>
+                    <td><%= cliente.email || '-' %></td>
+                    <td><%= cliente.direccion || '-' %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

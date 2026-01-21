@@ -1,0 +1,19 @@
+{
+  "name": "tomesvet",
+  "version": "1.0.0",
+  "description": "Aplicación de veterinaria con Node.js, MySQL y Bootstrap",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "mysql2": "^3.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

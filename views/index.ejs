@@ -1,0 +1,48 @@
+<%- include('partials/head', { title: 'Panel principal | TomesVet' }) %>
+<%- include('partials/nav') %>
+
+<main class="container py-5">
+  <div class="p-4 p-lg-5 bg-white rounded-4 shadow-sm mb-4">
+    <h1 class="display-6 fw-bold">Gestión veterinaria TomesVet</h1>
+    <p class="text-muted mb-0">
+      Administra clientes, mascotas, usuarios e historias clínicas desde un solo lugar.
+    </p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Clientes registrados</h5>
+          <p class="display-6 fw-semibold mb-0"><%= counts.clientes %></p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Mascotas activas</h5>
+          <p class="display-6 fw-semibold mb-0"><%= counts.mascotas %></p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Usuarios del sistema</h5>
+          <p class="display-6 fw-semibold mb-0"><%= counts.usuarios %></p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Historias clínicas</h5>
+          <p class="display-6 fw-semibold mb-0"><%= counts.historias %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

@@ -36,6 +36,18 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   CONSTRAINT fk_historia_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
 );
 
+CREATE TABLE IF NOT EXISTS turnos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  cliente_id INT NOT NULL,
+  mascota_id INT NOT NULL,
+  fecha DATE NOT NULL,
+  hora TIME NOT NULL,
+  motivo VARCHAR(180) NOT NULL,
+  estado VARCHAR(60) NOT NULL DEFAULT 'Pendiente',
+  CONSTRAINT fk_turno_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+  CONSTRAINT fk_turno_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
+);
+
 INSERT INTO clientes (nombre, telefono, email, direccion)
 VALUES
   ('Carolina López', '555-1234', 'carolina@example.com', 'Av. Siempre Viva 123'),
@@ -55,3 +67,8 @@ INSERT INTO historia_clinica (mascota_id, fecha, motivo, diagnostico, tratamient
 VALUES
   (1, '2024-09-15', 'Vacunación anual', 'Se aplica vacuna múltiple', 'Reposo 24 horas'),
   (2, '2024-09-18', 'Control general', 'Buen estado general', 'Continuar dieta balanceada');
+
+INSERT INTO turnos (cliente_id, mascota_id, fecha, hora, motivo, estado)
+VALUES
+  (1, 1, '2024-10-02', '09:30:00', 'Consulta general', 'Pendiente'),
+  (2, 2, '2024-10-03', '11:00:00', 'Control postoperatorio', 'Confirmado');

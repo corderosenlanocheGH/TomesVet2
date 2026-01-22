@@ -1,0 +1,84 @@
+<%- include('partials/head', { title: 'Turnos | TomesVet' }) %>
+<%- include('partials/nav') %>
+
+<main class="container py-5">
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Solicitar turno</h4>
+          <form action="/turnos" method="POST" class="d-grid gap-3">
+            <div>
+              <label class="form-label">Cliente</label>
+              <select class="form-select" name="cliente_id" required>
+                <option value="" disabled selected>Selecciona un cliente</option>
+                <% clientes.forEach((cliente) => { %>
+                  <option value="<%= cliente.id %>"><%= cliente.nombre %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Mascota</label>
+              <select class="form-select" name="mascota_id" required>
+                <option value="" disabled selected>Selecciona una mascota</option>
+                <% mascotas.forEach((mascota) => { %>
+                  <option value="<%= mascota.id %>">
+                    <%= mascota.nombre %> (Cliente: <%= mascota.cliente_nombre %>)
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Fecha</label>
+              <input class="form-control" type="date" name="fecha" required />
+            </div>
+            <div>
+              <label class="form-label">Hora</label>
+              <input class="form-control" type="time" name="hora" required />
+            </div>
+            <div>
+              <label class="form-label">Motivo</label>
+              <input class="form-control" type="text" name="motivo" required />
+            </div>
+            <button class="btn btn-primary" type="submit">Agendar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Turnos registrados</h4>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Mascota</th>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                  <th>Motivo</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% turnos.forEach((turno) => { %>
+                  <tr>
+                    <td><%= turno.cliente_nombre %></td>
+                    <td><%= turno.mascota_nombre %></td>
+                    <td><%= turno.fecha %></td>
+                    <td><%= turno.hora %></td>
+                    <td><%= turno.motivo %></td>
+                    <td><%= turno.estado %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

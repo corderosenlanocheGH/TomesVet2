@@ -15,13 +15,19 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', async (req, res) => {
-  const [[clienteCount], [mascotaCount], [usuarioCount], [historiaCount]] =
-    await Promise.all([
-      pool.query('SELECT COUNT(*) AS total FROM clientes'),
-      pool.query('SELECT COUNT(*) AS total FROM mascotas'),
-      pool.query('SELECT COUNT(*) AS total FROM usuarios'),
-      pool.query('SELECT COUNT(*) AS total FROM historia_clinica'),
-    ]);
+  const [
+    [clienteCount],
+    [mascotaCount],
+    [usuarioCount],
+    [historiaCount],
+    [turnoCount],
+  ] = await Promise.all([
+    pool.query('SELECT COUNT(*) AS total FROM clientes'),
+    pool.query('SELECT COUNT(*) AS total FROM mascotas'),
+    pool.query('SELECT COUNT(*) AS total FROM usuarios'),
+    pool.query('SELECT COUNT(*) AS total FROM historia_clinica'),
+    pool.query('SELECT COUNT(*) AS total FROM turnos'),
+  ]);
 
   res.render('index', {
     counts: {
@@ -29,6 +35,7 @@ app.get('/', async (req, res) => {
       mascotas: mascotaCount.total,
       usuarios: usuarioCount.total,
       historias: historiaCount.total,
+      turnos: turnoCount.total,
     },
   });
 });
@@ -102,6 +109,34 @@ app.post('/historia-clinica', async (req, res) => {
     [mascota_id, fecha, motivo, diagnostico, tratamiento]
   );
   res.redirect('/historia-clinica');
+});
+
+app.get('/turnos', async (req, res) => {
+  const [turnos] = await pool.query(
+    `SELECT turnos.*, clientes.nombre AS cliente_nombre, mascotas.nombre AS mascota_nombre
+     FROM turnos
+     JOIN clientes ON clientes.id = turnos.cliente_id
+     JOIN mascotas ON mascotas.id = turnos.mascota_id
+     ORDER BY turnos.fecha DESC, turnos.hora DESC`
+  );
+  const [clientes] = await pool.query('SELECT id, nombre FROM clientes ORDER BY nombre');
+  const [mascotas] = await pool.query(
+    `SELECT mascotas.id, mascotas.nombre, clientes.nombre AS cliente_nombre
+     FROM mascotas
+     JOIN clientes ON clientes.id = mascotas.cliente_id
+     ORDER BY mascotas.nombre`
+  );
+  res.render('turnos', { turnos, clientes, mascotas });
+});
+
+app.post('/turnos', async (req, res) => {
+  const { cliente_id, mascota_id, fecha, hora, motivo } = req.body;
+  await pool.query(
+    `INSERT INTO turnos (cliente_id, mascota_id, fecha, hora, motivo)
+     VALUES (?, ?, ?, ?, ?)`,
+    [cliente_id, mascota_id, fecha, hora, motivo]
+  );
+  res.redirect('/turnos');
 });
 
 app.listen(PORT, () => {

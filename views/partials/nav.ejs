@@ -1,27 +1,66 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-  <div class="container">
-    <a class="navbar-brand fw-semibold" href="/">TomesVet</a>
-    <button
-      class="navbar-toggler"
-      type="button"
-      data-bs-toggle="collapse"
-      data-bs-target="#navbarVet"
-      aria-controls="navbarVet"
-      aria-expanded="false"
-      aria-label="Toggle navigation"
-    >
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarVet">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link" href="/clientes">Clientes</a></li>
-        <li class="nav-item"><a class="nav-link" href="/mascotas">Mascotas</a></li>
-        <li class="nav-item"><a class="nav-link" href="/usuarios">Usuarios</a></li>
-        <li class="nav-item"><a class="nav-link" href="/turnos">Turnos</a></li>
-        <li class="nav-item">
-          <a class="nav-link" href="/historia-clinica">Historia clínica</a>
-        </li>
-      </ul>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-brand">TomesVet</span>
+      <button class="sidebar-toggle" type="button" aria-label="Mostrar menú">
+        <i class="bi bi-list"></i>
+      </button>
     </div>
-  </div>
-</nav>
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">TV</div>
+      <div>
+        <p class="sidebar-name">Tienda Veterinaria</p>
+        <span class="sidebar-role">Administrador</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="sidebar-link" href="/">
+        <i class="bi bi-speedometer2"></i>
+        Panel principal
+      </a>
+      <a class="sidebar-link" href="/clientes">
+        <i class="bi bi-people"></i>
+        Clientes
+      </a>
+      <a class="sidebar-link" href="/mascotas">
+        <i class="bi bi-heart-pulse"></i>
+        Mascotas
+      </a>
+      <a class="sidebar-link" href="/usuarios">
+        <i class="bi bi-person-badge"></i>
+        Usuarios
+      </a>
+      <a class="sidebar-link" href="/turnos">
+        <i class="bi bi-calendar-check"></i>
+        Turnos
+      </a>
+      <a class="sidebar-link" href="/historia-clinica">
+        <i class="bi bi-clipboard2-heart"></i>
+        Historia clínica
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <i class="bi bi-gear"></i>
+      Configuración
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <div class="topbar-title">
+        <i class="bi bi-hospital"></i>
+        Panel de control
+      </div>
+      <div class="topbar-actions">
+        <button class="topbar-icon" type="button" aria-label="Notificaciones">
+          <i class="bi bi-bell"></i>
+        </button>
+        <div class="topbar-user">
+          <div class="topbar-avatar">AV</div>
+          <div>
+            <p class="topbar-name">Abel OS</p>
+            <span class="topbar-role">Administrador</span>
+          </div>
+        </div>
+      </div>
+    </header>

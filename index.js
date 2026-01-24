@@ -39,12 +39,14 @@ app.get(
       [mascotaCount],
       [usuarioCount],
       [historiaCount],
+      [vacunaCount],
       [turnoCount],
     ] = await Promise.all([
       pool.query('SELECT COUNT(*) AS total FROM clientes'),
       pool.query('SELECT COUNT(*) AS total FROM mascotas'),
       pool.query('SELECT COUNT(*) AS total FROM usuarios'),
       pool.query('SELECT COUNT(*) AS total FROM historia_clinica'),
+      pool.query('SELECT COUNT(*) AS total FROM vacunas'),
       pool.query('SELECT COUNT(*) AS total FROM turnos'),
     ]);
 
@@ -54,6 +56,7 @@ app.get(
         mascotas: mascotaCount.total,
         usuarios: usuarioCount.total,
         historias: historiaCount.total,
+        vacunas: vacunaCount.total,
         turnos: turnoCount.total,
       },
     });
@@ -218,6 +221,111 @@ app.post(
       [mascota_id, fecha, motivo, diagnostico, tratamiento]
     );
     res.redirect('/historia-clinica');
+  })
+);
+
+app.get(
+  '/vacunas',
+  asyncHandler(async (req, res) => {
+    const [vacunas] = await pool.query(
+      `SELECT vacunas.*,
+              mascotas.nombre AS mascota_nombre,
+              clientes.nombre AS cliente_nombre
+       FROM vacunas
+       JOIN mascotas ON mascotas.id = vacunas.mascota_id
+       JOIN clientes ON clientes.id = mascotas.cliente_id
+       ORDER BY vacunas.fecha_aplicacion DESC`
+    );
+    const [mascotas] = await pool.query(
+      `SELECT mascotas.id,
+              mascotas.nombre,
+              clientes.nombre AS cliente_nombre
+       FROM mascotas
+       JOIN clientes ON clientes.id = mascotas.cliente_id
+       ORDER BY mascotas.nombre`
+    );
+    let vacunaEditar = null;
+    if (req.query.editar) {
+      const [rows] = await pool.query('SELECT * FROM vacunas WHERE id = ?', [
+        req.query.editar,
+      ]);
+      if (rows[0]) {
+        vacunaEditar = {
+          ...rows[0],
+          fecha_aplicacion: formatDateInput(rows[0].fecha_aplicacion),
+          proxima_fecha_aplicacion: formatDateInput(rows[0].proxima_fecha_aplicacion),
+        };
+      }
+    }
+    res.render('vacunas', { vacunas, mascotas, vacunaEditar });
+  })
+);
+
+app.post(
+  '/vacunas',
+  asyncHandler(async (req, res) => {
+    const {
+      mascota_id,
+      nombre_comercial,
+      tipo,
+      fecha_aplicacion,
+      proxima_fecha_aplicacion,
+      numero_serie,
+    } = req.body;
+    await pool.query(
+      `INSERT INTO vacunas (
+        mascota_id,
+        nombre_comercial,
+        tipo,
+        fecha_aplicacion,
+        proxima_fecha_aplicacion,
+        numero_serie
+      )
+      VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        mascota_id,
+        nombre_comercial,
+        tipo,
+        fecha_aplicacion,
+        proxima_fecha_aplicacion || null,
+        numero_serie || null,
+      ]
+    );
+    res.redirect('/vacunas');
+  })
+);
+
+app.post(
+  '/vacunas/:id',
+  asyncHandler(async (req, res) => {
+    const {
+      mascota_id,
+      nombre_comercial,
+      tipo,
+      fecha_aplicacion,
+      proxima_fecha_aplicacion,
+      numero_serie,
+    } = req.body;
+    await pool.query(
+      `UPDATE vacunas
+       SET mascota_id = ?,
+           nombre_comercial = ?,
+           tipo = ?,
+           fecha_aplicacion = ?,
+           proxima_fecha_aplicacion = ?,
+           numero_serie = ?
+       WHERE id = ?`,
+      [
+        mascota_id,
+        nombre_comercial,
+        tipo,
+        fecha_aplicacion,
+        proxima_fecha_aplicacion || null,
+        numero_serie || null,
+        req.params.id,
+      ]
+    );
+    res.redirect('/vacunas');
   })
 );
 

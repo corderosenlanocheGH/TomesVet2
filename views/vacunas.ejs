@@ -1,0 +1,136 @@
+<%- include('partials/head', { title: 'Vacunas | TomesVet' }) %>
+<%- include('partials/nav') %>
+
+<main class="content-area">
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-3">
+            <%= vacunaEditar ? 'Editar vacuna' : 'Nueva vacuna' %>
+          </h4>
+          <form
+            action="<%= vacunaEditar ? `/vacunas/${vacunaEditar.id}` : '/vacunas' %>"
+            method="POST"
+            class="d-grid gap-3"
+          >
+            <div>
+              <label class="form-label">Mascota</label>
+              <select class="form-select" name="mascota_id" required>
+                <option value="" disabled selected>Selecciona una mascota</option>
+                <% mascotas.forEach((mascota) => { %>
+                  <option
+                    value="<%= mascota.id %>"
+                    <%= vacunaEditar && vacunaEditar.mascota_id === mascota.id ? 'selected' : '' %>
+                  >
+                    <%= mascota.nombre %> - <%= mascota.cliente_nombre %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Nombre comercial</label>
+              <input
+                class="form-control"
+                type="text"
+                name="nombre_comercial"
+                value="<%= vacunaEditar ? vacunaEditar.nombre_comercial : '' %>"
+                required
+              />
+            </div>
+            <div>
+              <label class="form-label">Tipo</label>
+              <input
+                class="form-control"
+                type="text"
+                name="tipo"
+                value="<%= vacunaEditar ? vacunaEditar.tipo : '' %>"
+                placeholder="Antirrábica, quíntuple, etc."
+                required
+              />
+            </div>
+            <div>
+              <label class="form-label">Fecha de aplicación</label>
+              <input
+                class="form-control"
+                type="date"
+                name="fecha_aplicacion"
+                value="<%= vacunaEditar ? vacunaEditar.fecha_aplicacion : '' %>"
+                required
+              />
+            </div>
+            <div>
+              <label class="form-label">Próxima fecha de aplicación</label>
+              <input
+                class="form-control"
+                type="date"
+                name="proxima_fecha_aplicacion"
+                value="<%= vacunaEditar ? vacunaEditar.proxima_fecha_aplicacion || '' : '' %>"
+              />
+            </div>
+            <div>
+              <label class="form-label">Número de serie</label>
+              <input
+                class="form-control"
+                type="text"
+                name="numero_serie"
+                value="<%= vacunaEditar ? vacunaEditar.numero_serie || '' : '' %>"
+              />
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary" type="submit">
+                <%= vacunaEditar ? 'Actualizar' : 'Guardar' %>
+              </button>
+              <% if (vacunaEditar) { %>
+                <a class="btn btn-outline-secondary" href="/vacunas">Cancelar</a>
+              <% } %>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Vacunas aplicadas</h4>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Mascota</th>
+                  <th>Cliente</th>
+                  <th>Nombre comercial</th>
+                  <th>Tipo</th>
+                  <th>Fecha aplicación</th>
+                  <th>Próxima fecha</th>
+                  <th>Número de serie</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% vacunas.forEach((vacuna) => { %>
+                  <tr>
+                    <td><%= vacuna.mascota_nombre %></td>
+                    <td><%= vacuna.cliente_nombre %></td>
+                    <td><%= vacuna.nombre_comercial %></td>
+                    <td><%= vacuna.tipo %></td>
+                    <td><%= vacuna.fecha_aplicacion %></td>
+                    <td><%= vacuna.proxima_fecha_aplicacion || '-' %></td>
+                    <td><%= vacuna.numero_serie || '-' %></td>
+                    <td class="text-end">
+                      <a class="btn btn-sm btn-outline-primary" href="/vacunas?editar=<%= vacuna.id %>">
+                        Editar
+                      </a>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

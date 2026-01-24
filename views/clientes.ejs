@@ -6,25 +6,60 @@
     <div class="col-lg-4">
       <div class="card border-0 shadow-sm">
         <div class="card-body">
-          <h4 class="card-title mb-3">Nuevo cliente</h4>
-          <form action="/clientes" method="POST" class="d-grid gap-3">
+          <h4 class="card-title mb-3">
+            <%= clienteEditar ? 'Editar cliente' : 'Nuevo cliente' %>
+          </h4>
+          <form
+            action="<%= clienteEditar ? `/clientes/${clienteEditar.id}` : '/clientes' %>"
+            method="POST"
+            class="d-grid gap-3"
+          >
             <div>
               <label class="form-label">Nombre completo</label>
-              <input class="form-control" type="text" name="nombre" required />
+              <input
+                class="form-control"
+                type="text"
+                name="nombre"
+                value="<%= clienteEditar ? clienteEditar.nombre : '' %>"
+                required
+              />
             </div>
             <div>
               <label class="form-label">Teléfono</label>
-              <input class="form-control" type="text" name="telefono" required />
+              <input
+                class="form-control"
+                type="text"
+                name="telefono"
+                value="<%= clienteEditar ? clienteEditar.telefono : '' %>"
+                required
+              />
             </div>
             <div>
               <label class="form-label">Email</label>
-              <input class="form-control" type="email" name="email" />
+              <input
+                class="form-control"
+                type="email"
+                name="email"
+                value="<%= clienteEditar ? clienteEditar.email || '' : '' %>"
+              />
             </div>
             <div>
               <label class="form-label">Dirección</label>
-              <input class="form-control" type="text" name="direccion" />
+              <input
+                class="form-control"
+                type="text"
+                name="direccion"
+                value="<%= clienteEditar ? clienteEditar.direccion || '' : '' %>"
+              />
             </div>
-            <button class="btn btn-primary" type="submit">Guardar</button>
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary" type="submit">
+                <%= clienteEditar ? 'Actualizar' : 'Guardar' %>
+              </button>
+              <% if (clienteEditar) { %>
+                <a class="btn btn-outline-secondary" href="/clientes">Cancelar</a>
+              <% } %>
+            </div>
           </form>
         </div>
       </div>
@@ -41,6 +76,7 @@
                   <th>Teléfono</th>
                   <th>Email</th>
                   <th>Dirección</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -50,6 +86,11 @@
                     <td><%= cliente.telefono %></td>
                     <td><%= cliente.email || '-' %></td>
                     <td><%= cliente.direccion || '-' %></td>
+                    <td class="text-end">
+                      <a class="btn btn-sm btn-outline-primary" href="/clientes?editar=<%= cliente.id %>">
+                        Editar
+                      </a>
+                    </td>
                   </tr>
                 <% }) %>
               </tbody>

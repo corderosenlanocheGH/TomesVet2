@@ -6,26 +6,58 @@
     <div class="col-lg-4">
       <div class="card border-0 shadow-sm">
         <div class="card-body">
-          <h4 class="card-title mb-3">Nuevo usuario</h4>
-          <form action="/usuarios" method="POST" class="d-grid gap-3">
+          <h4 class="card-title mb-3">
+            <%= usuarioEditar ? 'Editar usuario' : 'Nuevo usuario' %>
+          </h4>
+          <form
+            action="<%= usuarioEditar ? `/usuarios/${usuarioEditar.id}` : '/usuarios' %>"
+            method="POST"
+            class="d-grid gap-3"
+          >
             <div>
               <label class="form-label">Nombre</label>
-              <input class="form-control" type="text" name="nombre" required />
+              <input
+                class="form-control"
+                type="text"
+                name="nombre"
+                value="<%= usuarioEditar ? usuarioEditar.nombre : '' %>"
+                required
+              />
             </div>
             <div>
               <label class="form-label">Rol</label>
               <select class="form-select" name="rol" required>
-                <option value="Veterinario">Veterinario</option>
-                <option value="Asistente">Asistente</option>
-                <option value="Recepción">Recepción</option>
-                <option value="Administrador">Administrador</option>
+                <option value="Veterinario" <%= usuarioEditar && usuarioEditar.rol === 'Veterinario' ? 'selected' : '' %>>
+                  Veterinario
+                </option>
+                <option value="Asistente" <%= usuarioEditar && usuarioEditar.rol === 'Asistente' ? 'selected' : '' %>>
+                  Asistente
+                </option>
+                <option value="Recepción" <%= usuarioEditar && usuarioEditar.rol === 'Recepción' ? 'selected' : '' %>>
+                  Recepción
+                </option>
+                <option value="Administrador" <%= usuarioEditar && usuarioEditar.rol === 'Administrador' ? 'selected' : '' %>>
+                  Administrador
+                </option>
               </select>
             </div>
             <div>
               <label class="form-label">Email</label>
-              <input class="form-control" type="email" name="email" />
+              <input
+                class="form-control"
+                type="email"
+                name="email"
+                value="<%= usuarioEditar ? usuarioEditar.email || '' : '' %>"
+              />
             </div>
-            <button class="btn btn-primary" type="submit">Guardar</button>
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary" type="submit">
+                <%= usuarioEditar ? 'Actualizar' : 'Guardar' %>
+              </button>
+              <% if (usuarioEditar) { %>
+                <a class="btn btn-outline-secondary" href="/usuarios">Cancelar</a>
+              <% } %>
+            </div>
           </form>
         </div>
       </div>
@@ -41,6 +73,7 @@
                   <th>Nombre</th>
                   <th>Rol</th>
                   <th>Email</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -49,6 +82,11 @@
                     <td><%= usuario.nombre %></td>
                     <td><%= usuario.rol %></td>
                     <td><%= usuario.email || '-' %></td>
+                    <td class="text-end">
+                      <a class="btn btn-sm btn-outline-primary" href="/usuarios?editar=<%= usuario.id %>">
+                        Editar
+                      </a>
+                    </td>
                   </tr>
                 <% }) %>
               </tbody>

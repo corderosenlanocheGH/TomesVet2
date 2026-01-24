@@ -10,7 +10,7 @@
           <form action="/turnos" method="POST" class="d-grid gap-3">
             <div>
               <label class="form-label">Cliente</label>
-              <select class="form-select" name="cliente_id" required>
+              <select class="form-select" name="cliente_id" id="cliente-select" required>
                 <option value="" disabled selected>Selecciona un cliente</option>
                 <% clientes.forEach((cliente) => { %>
                   <option value="<%= cliente.id %>"><%= cliente.nombre %></option>
@@ -19,10 +19,10 @@
             </div>
             <div>
               <label class="form-label">Mascota</label>
-              <select class="form-select" name="mascota_id" required>
+              <select class="form-select" name="mascota_id" id="mascota-select" required>
                 <option value="" disabled selected>Selecciona una mascota</option>
                 <% mascotas.forEach((mascota) => { %>
-                  <option value="<%= mascota.id %>">
+                  <option value="<%= mascota.id %>" data-cliente-id="<%= mascota.cliente_id %>">
                     <%= mascota.nombre %> (Cliente: <%= mascota.cliente_nombre %>)
                   </option>
                 <% }) %>
@@ -80,5 +80,30 @@
     </div>
   </div>
 </main>
+
+<script>
+  const clienteSelect = document.getElementById('cliente-select');
+  const mascotaSelect = document.getElementById('mascota-select');
+  const mascotaOptions = Array.from(mascotaSelect.querySelectorAll('option'));
+
+  const renderMascotas = (clienteId) => {
+    mascotaSelect.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    placeholder.textContent = 'Selecciona una mascota';
+    mascotaSelect.appendChild(placeholder);
+
+    mascotaOptions
+      .filter((option) => option.value)
+      .filter((option) => !clienteId || option.dataset.clienteId === clienteId)
+      .forEach((option) => mascotaSelect.appendChild(option));
+  };
+
+  clienteSelect.addEventListener('change', (event) => {
+    renderMascotas(event.target.value);
+  });
+</script>
 
 <%- include('partials/footer') %>

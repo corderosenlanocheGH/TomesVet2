@@ -18,6 +18,19 @@ app.use(express.static(path.join(__dirname, 'public')));
 const asyncHandler = (handler) => (req, res, next) =>
   Promise.resolve(handler(req, res, next)).catch(next);
 
+const formatDateInput = (value) => {
+  if (!value) {
+    return '';
+  }
+  if (value instanceof Date) {
+    return value.toISOString().split('T')[0];
+  }
+  if (typeof value === 'string') {
+    return value.split('T')[0];
+  }
+  return '';
+};
+
 app.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -51,7 +64,14 @@ app.get(
   '/clientes',
   asyncHandler(async (req, res) => {
     const [clientes] = await pool.query('SELECT * FROM clientes ORDER BY id DESC');
-    res.render('clientes', { clientes });
+    let clienteEditar = null;
+    if (req.query.editar) {
+      const [rows] = await pool.query('SELECT * FROM clientes WHERE id = ?', [
+        req.query.editar,
+      ]);
+      [clienteEditar] = rows;
+    }
+    res.render('clientes', { clientes, clienteEditar });
   })
 );
 
@@ -67,6 +87,18 @@ app.post(
   })
 );
 
+app.post(
+  '/clientes/:id',
+  asyncHandler(async (req, res) => {
+    const { nombre, telefono, email, direccion } = req.body;
+    await pool.query(
+      'UPDATE clientes SET nombre = ?, telefono = ?, email = ?, direccion = ? WHERE id = ?',
+      [nombre, telefono, email, direccion, req.params.id]
+    );
+    res.redirect('/clientes');
+  })
+);
+
 app.get(
   '/mascotas',
   asyncHandler(async (req, res) => {
@@ -77,7 +109,19 @@ app.get(
        ORDER BY mascotas.id DESC`
     );
     const [clientes] = await pool.query('SELECT id, nombre FROM clientes ORDER BY nombre');
-    res.render('mascotas', { mascotas, clientes });
+    let mascotaEditar = null;
+    if (req.query.editar) {
+      const [rows] = await pool.query('SELECT * FROM mascotas WHERE id = ?', [
+        req.query.editar,
+      ]);
+      if (rows[0]) {
+        mascotaEditar = {
+          ...rows[0],
+          fecha_nacimiento: formatDateInput(rows[0].fecha_nacimiento),
+        };
+      }
+    }
+    res.render('mascotas', { mascotas, clientes, mascotaEditar });
   })
 );
 
@@ -94,11 +138,32 @@ app.post(
   })
 );
 
+app.post(
+  '/mascotas/:id',
+  asyncHandler(async (req, res) => {
+    const { nombre, especie, raza, fecha_nacimiento, cliente_id } = req.body;
+    await pool.query(
+      `UPDATE mascotas
+       SET nombre = ?, especie = ?, raza = ?, fecha_nacimiento = ?, cliente_id = ?
+       WHERE id = ?`,
+      [nombre, especie, raza, fecha_nacimiento || null, cliente_id, req.params.id]
+    );
+    res.redirect('/mascotas');
+  })
+);
+
 app.get(
   '/usuarios',
   asyncHandler(async (req, res) => {
     const [usuarios] = await pool.query('SELECT * FROM usuarios ORDER BY id DESC');
-    res.render('usuarios', { usuarios });
+    let usuarioEditar = null;
+    if (req.query.editar) {
+      const [rows] = await pool.query('SELECT * FROM usuarios WHERE id = ?', [
+        req.query.editar,
+      ]);
+      [usuarioEditar] = rows;
+    }
+    res.render('usuarios', { usuarios, usuarioEditar });
   })
 );
 
@@ -110,6 +175,20 @@ app.post(
       nombre,
       rol,
       email,
+    ]);
+    res.redirect('/usuarios');
+  })
+);
+
+app.post(
+  '/usuarios/:id',
+  asyncHandler(async (req, res) => {
+    const { nombre, rol, email } = req.body;
+    await pool.query('UPDATE usuarios SET nombre = ?, rol = ?, email = ? WHERE id = ?', [
+      nombre,
+      rol,
+      email,
+      req.params.id,
     ]);
     res.redirect('/usuarios');
   })

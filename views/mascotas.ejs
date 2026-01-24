@@ -6,34 +6,74 @@
     <div class="col-lg-4">
       <div class="card border-0 shadow-sm">
         <div class="card-body">
-          <h4 class="card-title mb-3">Nueva mascota</h4>
-          <form action="/mascotas" method="POST" class="d-grid gap-3">
+          <h4 class="card-title mb-3">
+            <%= mascotaEditar ? 'Editar mascota' : 'Nueva mascota' %>
+          </h4>
+          <form
+            action="<%= mascotaEditar ? `/mascotas/${mascotaEditar.id}` : '/mascotas' %>"
+            method="POST"
+            class="d-grid gap-3"
+          >
             <div>
               <label class="form-label">Nombre</label>
-              <input class="form-control" type="text" name="nombre" required />
+              <input
+                class="form-control"
+                type="text"
+                name="nombre"
+                value="<%= mascotaEditar ? mascotaEditar.nombre : '' %>"
+                required
+              />
             </div>
             <div>
               <label class="form-label">Especie</label>
-              <input class="form-control" type="text" name="especie" required />
+              <input
+                class="form-control"
+                type="text"
+                name="especie"
+                value="<%= mascotaEditar ? mascotaEditar.especie : '' %>"
+                required
+              />
             </div>
             <div>
               <label class="form-label">Raza</label>
-              <input class="form-control" type="text" name="raza" />
+              <input
+                class="form-control"
+                type="text"
+                name="raza"
+                value="<%= mascotaEditar ? mascotaEditar.raza || '' : '' %>"
+              />
             </div>
             <div>
               <label class="form-label">Fecha de nacimiento</label>
-              <input class="form-control" type="date" name="fecha_nacimiento" />
+              <input
+                class="form-control"
+                type="date"
+                name="fecha_nacimiento"
+                value="<%= mascotaEditar ? mascotaEditar.fecha_nacimiento : '' %>"
+              />
             </div>
             <div>
               <label class="form-label">Cliente</label>
               <select class="form-select" name="cliente_id" required>
                 <option value="" disabled selected>Selecciona un cliente</option>
                 <% clientes.forEach((cliente) => { %>
-                  <option value="<%= cliente.id %>"><%= cliente.nombre %></option>
+                  <option
+                    value="<%= cliente.id %>"
+                    <%= mascotaEditar && mascotaEditar.cliente_id === cliente.id ? 'selected' : '' %>
+                  >
+                    <%= cliente.nombre %>
+                  </option>
                 <% }) %>
               </select>
             </div>
-            <button class="btn btn-primary" type="submit">Guardar</button>
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary" type="submit">
+                <%= mascotaEditar ? 'Actualizar' : 'Guardar' %>
+              </button>
+              <% if (mascotaEditar) { %>
+                <a class="btn btn-outline-secondary" href="/mascotas">Cancelar</a>
+              <% } %>
+            </div>
           </form>
         </div>
       </div>
@@ -51,6 +91,7 @@
                   <th>Raza</th>
                   <th>Fecha nacimiento</th>
                   <th>Cliente</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -61,6 +102,11 @@
                     <td><%= mascota.raza || '-' %></td>
                     <td><%= mascota.fecha_nacimiento || '-' %></td>
                     <td><%= mascota.cliente_nombre %></td>
+                    <td class="text-end">
+                      <a class="btn btn-sm btn-outline-primary" href="/mascotas?editar=<%= mascota.id %>">
+                        Editar
+                      </a>
+                    </td>
                   </tr>
                 <% }) %>
               </tbody>

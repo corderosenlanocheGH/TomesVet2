@@ -233,7 +233,10 @@ app.get(
     );
     const [clientes] = await pool.query('SELECT id, nombre FROM clientes ORDER BY nombre');
     const [mascotas] = await pool.query(
-      `SELECT mascotas.id, mascotas.nombre, clientes.nombre AS cliente_nombre
+      `SELECT mascotas.id,
+              mascotas.nombre,
+              mascotas.cliente_id,
+              clientes.nombre AS cliente_nombre
        FROM mascotas
        JOIN clientes ON clientes.id = mascotas.cliente_id
        ORDER BY mascotas.nombre`

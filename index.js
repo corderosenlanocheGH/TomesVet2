@@ -241,7 +241,10 @@ app.get(
        JOIN clientes ON clientes.id = mascotas.cliente_id
        ORDER BY mascotas.nombre`
     );
-    res.render('turnos', { turnos, clientes, mascotas });
+    const [motivosTurno] = await pool.query(
+      'SELECT id, nombre FROM motivos_turno ORDER BY nombre'
+    );
+    res.render('turnos', { turnos, clientes, mascotas, motivosTurno });
   })
 );
 
@@ -255,6 +258,37 @@ app.post(
       [cliente_id, mascota_id, fecha, hora, motivo]
     );
     res.redirect('/turnos');
+  })
+);
+
+app.get(
+  '/configuracion',
+  asyncHandler(async (req, res) => {
+    const [motivosTurno] = await pool.query(
+      'SELECT id, nombre FROM motivos_turno ORDER BY nombre'
+    );
+    res.render('configuracion', { motivosTurno });
+  })
+);
+
+app.post(
+  '/motivos-turno',
+  asyncHandler(async (req, res) => {
+    const { nombre } = req.body;
+    if (nombre && nombre.trim()) {
+      await pool.query('INSERT IGNORE INTO motivos_turno (nombre) VALUES (?)', [
+        nombre.trim(),
+      ]);
+    }
+    res.redirect('/configuracion');
+  })
+);
+
+app.post(
+  '/motivos-turno/:id/eliminar',
+  asyncHandler(async (req, res) => {
+    await pool.query('DELETE FROM motivos_turno WHERE id = ?', [req.params.id]);
+    res.redirect('/configuracion');
   })
 );
 

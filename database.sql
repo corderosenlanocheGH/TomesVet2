@@ -48,6 +48,11 @@ CREATE TABLE IF NOT EXISTS turnos (
   CONSTRAINT fk_turno_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
 );
 
+CREATE TABLE IF NOT EXISTS motivos_turno (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL UNIQUE
+);
+
 INSERT INTO clientes (nombre, telefono, email, direccion)
 VALUES
   ('Carolina López', '555-1234', 'carolina@example.com', 'Av. Siempre Viva 123'),
@@ -72,3 +77,10 @@ INSERT INTO turnos (cliente_id, mascota_id, fecha, hora, motivo, estado)
 VALUES
   (1, 1, '2024-10-02', '09:30:00', 'Consulta general', 'Pendiente'),
   (2, 2, '2024-10-03', '11:00:00', 'Control postoperatorio', 'Confirmado');
+
+INSERT INTO motivos_turno (nombre)
+VALUES
+  ('Consulta general'),
+  ('Vacunación'),
+  ('Control postoperatorio'),
+  ('Urgencia');

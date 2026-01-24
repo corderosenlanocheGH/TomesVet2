@@ -38,7 +38,12 @@
             </div>
             <div>
               <label class="form-label">Motivo</label>
-              <input class="form-control" type="text" name="motivo" required />
+              <select class="form-select" name="motivo" required>
+                <option value="" disabled selected>Selecciona un motivo</option>
+                <% motivosTurno.forEach((motivo) => { %>
+                  <option value="<%= motivo.nombre %>"><%= motivo.nombre %></option>
+                <% }) %>
+              </select>
             </div>
             <button class="btn btn-primary" type="submit">Agendar</button>
           </form>

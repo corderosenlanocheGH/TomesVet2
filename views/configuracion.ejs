@@ -1,0 +1,70 @@
+<%- include('partials/head', { title: 'Configuración | TomesVet' }) %>
+<%- include('partials/nav') %>
+
+<main class="content-area">
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Motivos de turnos</h4>
+          <form action="/motivos-turno" method="POST" class="d-grid gap-3">
+            <div>
+              <label class="form-label">Nuevo motivo</label>
+              <input
+                class="form-control"
+                type="text"
+                name="nombre"
+                placeholder="Ej: Consulta general"
+                required
+              />
+            </div>
+            <button class="btn btn-primary" type="submit">Agregar motivo</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Motivos registrados</h4>
+          <% if (!motivosTurno.length) { %>
+            <p class="text-muted mb-0">
+              Aún no hay motivos registrados. Agrega el primero para usarlo en los turnos.
+            </p>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead>
+                  <tr>
+                    <th>Motivo</th>
+                    <th class="text-end">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% motivosTurno.forEach((motivo) => { %>
+                    <tr>
+                      <td><%= motivo.nombre %></td>
+                      <td class="text-end">
+                        <form
+                          action="/motivos-turno/<%= motivo.id %>/eliminar"
+                          method="POST"
+                          class="d-inline"
+                        >
+                          <button class="btn btn-outline-danger btn-sm" type="submit">
+                            Eliminar
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

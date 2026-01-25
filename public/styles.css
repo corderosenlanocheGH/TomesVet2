@@ -235,6 +235,61 @@ body {
   border-bottom-right-radius: 12px;
 }
 
+.turnos-filters {
+  align-items: flex-end;
+}
+
+.turnos-filters .form-control,
+.turnos-filters .form-select {
+  min-width: 190px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.status-pill[data-status-slug="pendiente"] {
+  background: #fde68a;
+  color: #92400e;
+}
+
+.status-pill[data-status-slug="confirmado"],
+.status-pill[data-status-slug="confirmada"] {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.status-pill[data-status-slug="completado"],
+.status-pill[data-status-slug="finalizado"] {
+  background: #bae6fd;
+  color: #075985;
+}
+
+.status-pill[data-status-slug="cancelado"],
+.status-pill[data-status-slug="cancelada"] {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.status-pill[data-status-slug="reprogramado"],
+.status-pill[data-status-slug="reprogramada"] {
+  background: #fbcfe8;
+  color: #9d174d;
+}
+
+.is-hidden {
+  display: none;
+}
+
 table td,
 table th {
   vertical-align: middle;

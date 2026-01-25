@@ -53,7 +53,29 @@
     <div class="col-lg-8">
       <div class="card border-0 shadow-sm">
         <div class="card-body">
-          <h4 class="card-title mb-3">Turnos registrados</h4>
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <h4 class="card-title mb-0">Turnos registrados</h4>
+            <div class="d-flex flex-wrap gap-2 turnos-filters">
+              <div>
+                <label class="form-label mb-1" for="turnos-busqueda">Buscar</label>
+                <input
+                  class="form-control"
+                  type="search"
+                  id="turnos-busqueda"
+                  placeholder="Cliente, mascota o motivo"
+                />
+              </div>
+              <div>
+                <label class="form-label mb-1" for="turnos-estado">Estado</label>
+                <select class="form-select" id="turnos-estado">
+                  <option value="">Todos</option>
+                </select>
+              </div>
+              <div class="d-flex align-items-end">
+                <button class="btn btn-outline-secondary" type="button" id="turnos-limpiar">Limpiar</button>
+              </div>
+            </div>
+          </div>
           <div class="table-responsive">
             <table class="table align-middle">
               <thead>
@@ -66,15 +88,17 @@
                   <th>Estado</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="turnos-body">
                 <% turnos.forEach((turno) => { %>
-                  <tr>
+                  <tr data-estado="<%= turno.estado %>">
                     <td><%= turno.cliente_nombre %></td>
                     <td><%= turno.mascota_nombre %></td>
                     <td><%= turno.fecha %></td>
                     <td><%= turno.hora %></td>
                     <td><%= turno.motivo %></td>
-                    <td><%= turno.estado %></td>
+                    <td>
+                      <span class="status-pill" data-status="<%= turno.estado %>"><%= turno.estado %></span>
+                    </td>
                   </tr>
                 <% }) %>
               </tbody>
@@ -90,6 +114,10 @@
   const clienteSelect = document.getElementById('cliente-select');
   const mascotaSelect = document.getElementById('mascota-select');
   const mascotaOptions = Array.from(mascotaSelect.querySelectorAll('option'));
+  const turnosBody = document.getElementById('turnos-body');
+  const estadoSelect = document.getElementById('turnos-estado');
+  const buscarInput = document.getElementById('turnos-busqueda');
+  const limpiarButton = document.getElementById('turnos-limpiar');
 
   const renderMascotas = (clienteId) => {
     mascotaSelect.innerHTML = '';
@@ -109,6 +137,54 @@
   clienteSelect.addEventListener('change', (event) => {
     renderMascotas(event.target.value);
   });
+
+  const normalizeText = (value = '') =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+
+  const statusPills = Array.from(document.querySelectorAll('.status-pill'));
+  statusPills.forEach((pill) => {
+    const slug = normalizeText(pill.dataset.status).replace(/\s+/g, '-');
+    pill.dataset.statusSlug = slug;
+  });
+
+  const turnosRows = Array.from(turnosBody?.querySelectorAll('tr') || []);
+  const estados = Array.from(
+    new Set(turnosRows.map((row) => row.dataset.estado).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b, 'es'));
+
+  estados.forEach((estado) => {
+    const option = document.createElement('option');
+    option.value = estado;
+    option.textContent = estado;
+    estadoSelect.appendChild(option);
+  });
+
+  const applyTurnosFilter = () => {
+    const estado = estadoSelect.value;
+    const query = normalizeText(buscarInput.value);
+
+    turnosRows.forEach((row) => {
+      const estadoValue = row.dataset.estado || '';
+      const rowText = normalizeText(row.textContent);
+      const estadoMatch = !estado || estadoValue === estado;
+      const textMatch = !query || rowText.includes(query);
+      row.classList.toggle('is-hidden', !(estadoMatch && textMatch));
+    });
+  };
+
+  const clearTurnosFilters = () => {
+    buscarInput.value = '';
+    estadoSelect.value = '';
+    applyTurnosFilter();
+  };
+
+  buscarInput.addEventListener('input', applyTurnosFilter);
+  estadoSelect.addEventListener('change', applyTurnosFilter);
+  limpiarButton.addEventListener('click', clearTurnosFilters);
 </script>
 
 <%- include('partials/footer') %>

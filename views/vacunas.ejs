@@ -30,24 +30,35 @@
             </div>
             <div>
               <label class="form-label">Nombre comercial</label>
-              <input
-                class="form-control"
-                type="text"
-                name="nombre_comercial"
-                value="<%= vacunaEditar ? vacunaEditar.nombre_comercial : '' %>"
-                required
-              />
+              <select class="form-select" name="nombre_comercial" required>
+                <option value="" disabled <%= vacunaEditar ? '' : 'selected' %>>
+                  Selecciona un nombre comercial
+                </option>
+                <% nombresComerciales.forEach((nombre) => { %>
+                  <option
+                    value="<%= nombre.nombre %>"
+                    <%= vacunaEditar && vacunaEditar.nombre_comercial === nombre.nombre ? 'selected' : '' %>
+                  >
+                    <%= nombre.nombre %>
+                  </option>
+                <% }) %>
+              </select>
             </div>
             <div>
               <label class="form-label">Tipo</label>
-              <input
-                class="form-control"
-                type="text"
-                name="tipo"
-                value="<%= vacunaEditar ? vacunaEditar.tipo : '' %>"
-                placeholder="Antirrábica, quíntuple, etc."
-                required
-              />
+              <select class="form-select" name="tipo" required>
+                <option value="" disabled <%= vacunaEditar ? '' : 'selected' %>>
+                  Selecciona un tipo
+                </option>
+                <% tiposVacuna.forEach((tipo) => { %>
+                  <option
+                    value="<%= tipo.nombre %>"
+                    <%= vacunaEditar && vacunaEditar.tipo === tipo.nombre ? 'selected' : '' %>
+                  >
+                    <%= tipo.nombre %>
+                  </option>
+                <% }) %>
+              </select>
             </div>
             <div>
               <label class="form-label">Fecha de aplicación</label>
@@ -86,6 +97,79 @@
               <% } %>
             </div>
           </form>
+        </div>
+      </div>
+      <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Gestionar valores de vacunas</h4>
+          <div class="row g-3">
+            <div class="col-12">
+              <h6 class="text-uppercase text-muted mb-2">Nombre comercial</h6>
+              <form action="/vacunas/nombre-comercial" method="POST" class="d-flex gap-2 flex-wrap">
+                <input
+                  class="form-control flex-grow-1"
+                  type="text"
+                  name="nombre"
+                  placeholder="Agregar nuevo nombre comercial"
+                  required
+                />
+                <button class="btn btn-outline-primary" type="submit">Agregar</button>
+              </form>
+              <form
+                action="/vacunas/nombre-comercial/editar"
+                method="POST"
+                class="d-flex gap-2 flex-wrap mt-2"
+              >
+                <select class="form-select" name="id" required>
+                  <option value="" disabled selected>Selecciona para editar</option>
+                  <% nombresComerciales.forEach((nombre) => { %>
+                    <option value="<%= nombre.id %>"><%= nombre.nombre %></option>
+                  <% }) %>
+                </select>
+                <input
+                  class="form-control flex-grow-1"
+                  type="text"
+                  name="nombre"
+                  placeholder="Nuevo nombre comercial"
+                  required
+                />
+                <button class="btn btn-outline-secondary" type="submit">Actualizar</button>
+              </form>
+            </div>
+            <div class="col-12">
+              <h6 class="text-uppercase text-muted mb-2">Tipo</h6>
+              <form action="/vacunas/tipo" method="POST" class="d-flex gap-2 flex-wrap">
+                <input
+                  class="form-control flex-grow-1"
+                  type="text"
+                  name="nombre"
+                  placeholder="Agregar nuevo tipo"
+                  required
+                />
+                <button class="btn btn-outline-primary" type="submit">Agregar</button>
+              </form>
+              <form
+                action="/vacunas/tipo/editar"
+                method="POST"
+                class="d-flex gap-2 flex-wrap mt-2"
+              >
+                <select class="form-select" name="id" required>
+                  <option value="" disabled selected>Selecciona para editar</option>
+                  <% tiposVacuna.forEach((tipo) => { %>
+                    <option value="<%= tipo.id %>"><%= tipo.nombre %></option>
+                  <% }) %>
+                </select>
+                <input
+                  class="form-control flex-grow-1"
+                  type="text"
+                  name="nombre"
+                  placeholder="Nuevo tipo"
+                  required
+                />
+                <button class="btn btn-outline-secondary" type="submit">Actualizar</button>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -349,7 +349,7 @@ app.post(
        ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)`,
       [nombre]
     );
-    res.redirect('/vacunas');
+    res.redirect('/configuracion');
   })
 );
 
@@ -372,7 +372,7 @@ app.post(
         [nombre, nombreAnterior]
       );
     }
-    res.redirect('/vacunas');
+    res.redirect('/configuracion');
   })
 );
 
@@ -386,7 +386,7 @@ app.post(
        ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)`,
       [nombre]
     );
-    res.redirect('/vacunas');
+    res.redirect('/configuracion');
   })
 );
 
@@ -400,7 +400,7 @@ app.post(
       await pool.query('UPDATE vacunas_tipos SET nombre = ? WHERE id = ?', [nombre, id]);
       await pool.query('UPDATE vacunas SET tipo = ? WHERE tipo = ?', [nombre, nombreAnterior]);
     }
-    res.redirect('/vacunas');
+    res.redirect('/configuracion');
   })
 );
 
@@ -450,7 +450,11 @@ app.get(
     const [motivosTurno] = await pool.query(
       'SELECT id, nombre FROM motivos_turno ORDER BY nombre'
     );
-    res.render('configuracion', { motivosTurno });
+    const [nombresComerciales] = await pool.query(
+      'SELECT id, nombre FROM vacunas_nombres_comerciales ORDER BY nombre'
+    );
+    const [tiposVacuna] = await pool.query('SELECT id, nombre FROM vacunas_tipos ORDER BY nombre');
+    res.render('configuracion', { motivosTurno, nombresComerciales, tiposVacuna });
   })
 );
 

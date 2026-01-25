@@ -244,6 +244,10 @@ app.get(
        JOIN clientes ON clientes.id = mascotas.cliente_id
        ORDER BY mascotas.nombre`
     );
+    const [nombresComerciales] = await pool.query(
+      'SELECT id, nombre FROM vacunas_nombres_comerciales ORDER BY nombre'
+    );
+    const [tiposVacuna] = await pool.query('SELECT id, nombre FROM vacunas_tipos ORDER BY nombre');
     let vacunaEditar = null;
     if (req.query.editar) {
       const [rows] = await pool.query('SELECT * FROM vacunas WHERE id = ?', [
@@ -257,7 +261,13 @@ app.get(
         };
       }
     }
-    res.render('vacunas', { vacunas, mascotas, vacunaEditar });
+    res.render('vacunas', {
+      vacunas,
+      mascotas,
+      vacunaEditar,
+      nombresComerciales,
+      tiposVacuna,
+    });
   })
 );
 
@@ -325,6 +335,71 @@ app.post(
         req.params.id,
       ]
     );
+    res.redirect('/vacunas');
+  })
+);
+
+app.post(
+  '/vacunas/nombre-comercial',
+  asyncHandler(async (req, res) => {
+    const { nombre } = req.body;
+    await pool.query(
+      `INSERT INTO vacunas_nombres_comerciales (nombre)
+       VALUES (?)
+       ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)`,
+      [nombre]
+    );
+    res.redirect('/vacunas');
+  })
+);
+
+app.post(
+  '/vacunas/nombre-comercial/editar',
+  asyncHandler(async (req, res) => {
+    const { id, nombre } = req.body;
+    const [rows] = await pool.query(
+      'SELECT nombre FROM vacunas_nombres_comerciales WHERE id = ?',
+      [id]
+    );
+    if (rows[0]) {
+      const nombreAnterior = rows[0].nombre;
+      await pool.query('UPDATE vacunas_nombres_comerciales SET nombre = ? WHERE id = ?', [
+        nombre,
+        id,
+      ]);
+      await pool.query(
+        'UPDATE vacunas SET nombre_comercial = ? WHERE nombre_comercial = ?',
+        [nombre, nombreAnterior]
+      );
+    }
+    res.redirect('/vacunas');
+  })
+);
+
+app.post(
+  '/vacunas/tipo',
+  asyncHandler(async (req, res) => {
+    const { nombre } = req.body;
+    await pool.query(
+      `INSERT INTO vacunas_tipos (nombre)
+       VALUES (?)
+       ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)`,
+      [nombre]
+    );
+    res.redirect('/vacunas');
+  })
+);
+
+app.post(
+  '/vacunas/tipo/editar',
+  asyncHandler(async (req, res) => {
+    const { id, nombre } = req.body;
+    const [rows] = await pool.query('SELECT nombre FROM vacunas_tipos WHERE id = ?', [id]);
+    if (rows[0]) {
+      const nombreAnterior = rows[0].nombre;
+      await pool.query('UPDATE vacunas_tipos SET nombre = ? WHERE id = ?', [nombre, id]);
+      await pool.query('UPDATE vacunas SET tipo = ? WHERE tipo = ?', [nombre, nombreAnterior]);
+    }
     res.redirect('/vacunas');
   })
 );

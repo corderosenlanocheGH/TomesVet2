@@ -3,71 +3,34 @@
 
 <main class="content-area">
   <div class="row g-4">
-    <div class="col-lg-5">
-      <div class="card border-0 shadow-sm">
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <h4 class="card-title mb-3">Motivos de turnos</h4>
-          <form action="/motivos-turno" method="POST" class="d-grid gap-3">
-            <div>
-              <label class="form-label">Nuevo motivo</label>
-              <input
-                class="form-control"
-                type="text"
-                name="nombre"
-                placeholder="Ej: Consulta general"
-                required
-              />
-            </div>
-            <button class="btn btn-primary" type="submit">Agregar motivo</button>
-          </form>
+          <p class="text-muted mb-3">
+            Centraliza los motivos disponibles para las reservas y mantén las opciones actualizadas.
+          </p>
+          <a class="btn btn-outline-primary" href="/motivos-turno">
+            Ir a motivos de turnos
+          </a>
         </div>
       </div>
     </div>
-    <div class="col-lg-7">
-      <div class="card border-0 shadow-sm">
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
-          <h4 class="card-title mb-3">Motivos registrados</h4>
-          <% if (!motivosTurno.length) { %>
-            <p class="text-muted mb-0">
-              Aún no hay motivos registrados. Agrega el primero para usarlo en los turnos.
-            </p>
-          <% } else { %>
-            <div class="table-responsive">
-              <table class="table align-middle">
-                <thead>
-                  <tr>
-                    <th>Motivo</th>
-                    <th class="text-end">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% motivosTurno.forEach((motivo) => { %>
-                    <tr>
-                      <td><%= motivo.nombre %></td>
-                      <td class="text-end">
-                        <form
-                          action="/motivos-turno/<%= motivo.id %>/eliminar"
-                          method="POST"
-                          class="d-inline"
-                        >
-                          <button class="btn btn-outline-danger btn-sm" type="submit">
-                            Eliminar
-                          </button>
-                        </form>
-                      </td>
-                    </tr>
-                  <% }) %>
-                </tbody>
-              </table>
-            </div>
-          <% } %>
+          <h4 class="card-title mb-3">Gestionar valores de vacunas</h4>
+          <p class="text-muted mb-3">
+            Administra los nombres comerciales y tipos para que aparezcan en las cargas de vacunas.
+          </p>
+          <a class="btn btn-outline-primary" href="/vacunas/valores">
+            Ir a valores de vacunas
+          </a>
         </div>
       </div>
     </div>
-  </div>
-  <div class="row g-4 mt-1">
-    <div class="col-lg-5">
-      <div class="card border-0 shadow-sm">
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <h4 class="card-title mb-3">Usuarios</h4>
           <p class="text-muted mb-3">
@@ -76,81 +39,6 @@
           <a class="btn btn-outline-primary" href="/usuarios">
             Ir a gestión de usuarios
           </a>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-7">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <h4 class="card-title mb-3">Gestionar valores de vacunas</h4>
-          <div class="row g-3">
-            <div class="col-12">
-              <h6 class="text-uppercase text-muted mb-2">Nombre comercial</h6>
-              <form action="/vacunas/nombre-comercial" method="POST" class="d-flex gap-2 flex-wrap">
-                <input
-                  class="form-control flex-grow-1"
-                  type="text"
-                  name="nombre"
-                  placeholder="Agregar nuevo nombre comercial"
-                  required
-                />
-                <button class="btn btn-outline-primary" type="submit">Agregar</button>
-              </form>
-              <form
-                action="/vacunas/nombre-comercial/editar"
-                method="POST"
-                class="d-flex gap-2 flex-wrap mt-2"
-              >
-                <select class="form-select" name="id" required>
-                  <option value="" disabled selected>Selecciona para editar</option>
-                  <% nombresComerciales.forEach((nombre) => { %>
-                    <option value="<%= nombre.id %>"><%= nombre.nombre %></option>
-                  <% }) %>
-                </select>
-                <input
-                  class="form-control flex-grow-1"
-                  type="text"
-                  name="nombre"
-                  placeholder="Nuevo nombre comercial"
-                  required
-                />
-                <button class="btn btn-outline-secondary" type="submit">Actualizar</button>
-              </form>
-            </div>
-            <div class="col-12">
-              <h6 class="text-uppercase text-muted mb-2">Tipo</h6>
-              <form action="/vacunas/tipo" method="POST" class="d-flex gap-2 flex-wrap">
-                <input
-                  class="form-control flex-grow-1"
-                  type="text"
-                  name="nombre"
-                  placeholder="Agregar nuevo tipo"
-                  required
-                />
-                <button class="btn btn-outline-primary" type="submit">Agregar</button>
-              </form>
-              <form
-                action="/vacunas/tipo/editar"
-                method="POST"
-                class="d-flex gap-2 flex-wrap mt-2"
-              >
-                <select class="form-select" name="id" required>
-                  <option value="" disabled selected>Selecciona para editar</option>
-                  <% tiposVacuna.forEach((tipo) => { %>
-                    <option value="<%= tipo.id %>"><%= tipo.nombre %></option>
-                  <% }) %>
-                </select>
-                <input
-                  class="form-control flex-grow-1"
-                  type="text"
-                  name="nombre"
-                  placeholder="Nuevo tipo"
-                  required
-                />
-                <button class="btn btn-outline-secondary" type="submit">Actualizar</button>
-              </form>
-            </div>
-          </div>
         </div>
       </div>
     </div>

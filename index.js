@@ -349,7 +349,7 @@ app.post(
        ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)`,
       [nombre]
     );
-    res.redirect('/configuracion');
+    res.redirect('/vacunas/valores');
   })
 );
 
@@ -372,7 +372,7 @@ app.post(
         [nombre, nombreAnterior]
       );
     }
-    res.redirect('/configuracion');
+    res.redirect('/vacunas/valores');
   })
 );
 
@@ -386,7 +386,7 @@ app.post(
        ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)`,
       [nombre]
     );
-    res.redirect('/configuracion');
+    res.redirect('/vacunas/valores');
   })
 );
 
@@ -400,7 +400,7 @@ app.post(
       await pool.query('UPDATE vacunas_tipos SET nombre = ? WHERE id = ?', [nombre, id]);
       await pool.query('UPDATE vacunas SET tipo = ? WHERE tipo = ?', [nombre, nombreAnterior]);
     }
-    res.redirect('/configuracion');
+    res.redirect('/vacunas/valores');
   })
 );
 
@@ -447,14 +447,17 @@ app.post(
 app.get(
   '/configuracion',
   asyncHandler(async (req, res) => {
+    res.render('configuracion');
+  })
+);
+
+app.get(
+  '/motivos-turno',
+  asyncHandler(async (req, res) => {
     const [motivosTurno] = await pool.query(
       'SELECT id, nombre FROM motivos_turno ORDER BY nombre'
     );
-    const [nombresComerciales] = await pool.query(
-      'SELECT id, nombre FROM vacunas_nombres_comerciales ORDER BY nombre'
-    );
-    const [tiposVacuna] = await pool.query('SELECT id, nombre FROM vacunas_tipos ORDER BY nombre');
-    res.render('configuracion', { motivosTurno, nombresComerciales, tiposVacuna });
+    res.render('motivos-turno', { motivosTurno });
   })
 );
 
@@ -467,7 +470,7 @@ app.post(
         nombre.trim(),
       ]);
     }
-    res.redirect('/configuracion');
+    res.redirect('/motivos-turno');
   })
 );
 
@@ -475,7 +478,18 @@ app.post(
   '/motivos-turno/:id/eliminar',
   asyncHandler(async (req, res) => {
     await pool.query('DELETE FROM motivos_turno WHERE id = ?', [req.params.id]);
-    res.redirect('/configuracion');
+    res.redirect('/motivos-turno');
+  })
+);
+
+app.get(
+  '/vacunas/valores',
+  asyncHandler(async (req, res) => {
+    const [nombresComerciales] = await pool.query(
+      'SELECT id, nombre FROM vacunas_nombres_comerciales ORDER BY nombre'
+    );
+    const [tiposVacuna] = await pool.query('SELECT id, nombre FROM vacunas_tipos ORDER BY nombre');
+    res.render('vacunas-valores', { nombresComerciales, tiposVacuna });
   })
 );
 

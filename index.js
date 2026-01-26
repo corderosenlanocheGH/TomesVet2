@@ -245,7 +245,13 @@ app.get(
        ORDER BY mascotas.nombre`
     );
     const [nombresComerciales] = await pool.query(
-      'SELECT id, nombre FROM vacunas_nombres_comerciales ORDER BY nombre'
+      `SELECT vacunas_nombres_comerciales.id,
+              vacunas_nombres_comerciales.nombre,
+              vacunas_nombres_comerciales.tipo_id,
+              vacunas_tipos.nombre AS tipo_nombre
+       FROM vacunas_nombres_comerciales
+       LEFT JOIN vacunas_tipos ON vacunas_tipos.id = vacunas_nombres_comerciales.tipo_id
+       ORDER BY vacunas_nombres_comerciales.nombre`
     );
     const [tiposVacuna] = await pool.query('SELECT id, nombre FROM vacunas_tipos ORDER BY nombre');
     let vacunaEditar = null;
@@ -277,11 +283,18 @@ app.post(
     const {
       mascota_id,
       nombre_comercial,
-      tipo,
       fecha_aplicacion,
       proxima_fecha_aplicacion,
       numero_serie,
     } = req.body;
+    const [tipoRows] = await pool.query(
+      `SELECT vacunas_tipos.nombre AS tipo_nombre
+       FROM vacunas_nombres_comerciales
+       JOIN vacunas_tipos ON vacunas_tipos.id = vacunas_nombres_comerciales.tipo_id
+       WHERE vacunas_nombres_comerciales.nombre = ?`,
+      [nombre_comercial]
+    );
+    const tipo = tipoRows[0]?.tipo_nombre || req.body.tipo;
     await pool.query(
       `INSERT INTO vacunas (
         mascota_id,
@@ -311,11 +324,18 @@ app.post(
     const {
       mascota_id,
       nombre_comercial,
-      tipo,
       fecha_aplicacion,
       proxima_fecha_aplicacion,
       numero_serie,
     } = req.body;
+    const [tipoRows] = await pool.query(
+      `SELECT vacunas_tipos.nombre AS tipo_nombre
+       FROM vacunas_nombres_comerciales
+       JOIN vacunas_tipos ON vacunas_tipos.id = vacunas_nombres_comerciales.tipo_id
+       WHERE vacunas_nombres_comerciales.nombre = ?`,
+      [nombre_comercial]
+    );
+    const tipo = tipoRows[0]?.tipo_nombre || req.body.tipo;
     await pool.query(
       `UPDATE vacunas
        SET mascota_id = ?,
@@ -342,12 +362,12 @@ app.post(
 app.post(
   '/vacunas/nombre-comercial',
   asyncHandler(async (req, res) => {
-    const { nombre } = req.body;
+    const { nombre, tipo_id } = req.body;
     await pool.query(
-      `INSERT INTO vacunas_nombres_comerciales (nombre)
-       VALUES (?)
-       ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)`,
-      [nombre]
+      `INSERT INTO vacunas_nombres_comerciales (nombre, tipo_id)
+       VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), tipo_id = VALUES(tipo_id)`,
+      [nombre, tipo_id]
     );
     res.redirect('/vacunas/valores');
   })
@@ -356,20 +376,24 @@ app.post(
 app.post(
   '/vacunas/nombre-comercial/editar',
   asyncHandler(async (req, res) => {
-    const { id, nombre } = req.body;
+    const { id, nombre, tipo_id } = req.body;
     const [rows] = await pool.query(
       'SELECT nombre FROM vacunas_nombres_comerciales WHERE id = ?',
       [id]
     );
     if (rows[0]) {
       const nombreAnterior = rows[0].nombre;
-      await pool.query('UPDATE vacunas_nombres_comerciales SET nombre = ? WHERE id = ?', [
-        nombre,
-        id,
-      ]);
       await pool.query(
-        'UPDATE vacunas SET nombre_comercial = ? WHERE nombre_comercial = ?',
-        [nombre, nombreAnterior]
+        'UPDATE vacunas_nombres_comerciales SET nombre = ?, tipo_id = ? WHERE id = ?',
+        [nombre, tipo_id, id]
+      );
+      const [tipoRows] = await pool.query('SELECT nombre FROM vacunas_tipos WHERE id = ?', [
+        tipo_id,
+      ]);
+      const tipoNombre = tipoRows[0]?.nombre;
+      await pool.query(
+        'UPDATE vacunas SET nombre_comercial = ?, tipo = ? WHERE nombre_comercial = ?',
+        [nombre, tipoNombre, nombreAnterior]
       );
     }
     res.redirect('/vacunas/valores');
@@ -486,7 +510,13 @@ app.get(
   '/vacunas/valores',
   asyncHandler(async (req, res) => {
     const [nombresComerciales] = await pool.query(
-      'SELECT id, nombre FROM vacunas_nombres_comerciales ORDER BY nombre'
+      `SELECT vacunas_nombres_comerciales.id,
+              vacunas_nombres_comerciales.nombre,
+              vacunas_nombres_comerciales.tipo_id,
+              vacunas_tipos.nombre AS tipo_nombre
+       FROM vacunas_nombres_comerciales
+       LEFT JOIN vacunas_tipos ON vacunas_tipos.id = vacunas_nombres_comerciales.tipo_id
+       ORDER BY vacunas_nombres_comerciales.nombre`
     );
     const [tiposVacuna] = await pool.query('SELECT id, nombre FROM vacunas_tipos ORDER BY nombre');
     res.render('vacunas-valores', { nombresComerciales, tiposVacuna });

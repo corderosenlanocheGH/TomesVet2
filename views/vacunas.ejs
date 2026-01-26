@@ -30,13 +30,14 @@
             </div>
             <div>
               <label class="form-label">Nombre comercial</label>
-              <select class="form-select" name="nombre_comercial" required>
+              <select class="form-select" name="nombre_comercial" id="vacuna-nombre-comercial" required>
                 <option value="" disabled <%= vacunaEditar ? '' : 'selected' %>>
                   Selecciona un nombre comercial
                 </option>
                 <% nombresComerciales.forEach((nombre) => { %>
                   <option
                     value="<%= nombre.nombre %>"
+                    data-tipo="<%= nombre.tipo_nombre || '' %>"
                     <%= vacunaEditar && vacunaEditar.nombre_comercial === nombre.nombre ? 'selected' : '' %>
                   >
                     <%= nombre.nombre %>
@@ -45,8 +46,14 @@
               </select>
             </div>
             <div>
-              <label class="form-label">Tipo</label>
-              <select class="form-select" name="tipo" required>
+              <label class="form-label">Tipo (según nombre comercial)</label>
+              <select
+                class="form-select"
+                name="tipo"
+                id="vacuna-tipo"
+                required
+                disabled
+              >
                 <option value="" disabled <%= vacunaEditar ? '' : 'selected' %>>
                   Selecciona un tipo
                 </option>
@@ -143,5 +150,25 @@
     </div>
   </div>
 </main>
+
+<script>
+  const nombreSelect = document.getElementById('vacuna-nombre-comercial');
+  const tipoSelect = document.getElementById('vacuna-tipo');
+
+  const actualizarTipo = () => {
+    const selectedOption = nombreSelect.options[nombreSelect.selectedIndex];
+    const tipoRelacionado = selectedOption?.dataset?.tipo || '';
+    if (!tipoRelacionado) {
+      tipoSelect.value = '';
+      return;
+    }
+    tipoSelect.value = tipoRelacionado;
+  };
+
+  if (nombreSelect && tipoSelect) {
+    nombreSelect.addEventListener('change', actualizarTipo);
+    actualizarTipo();
+  }
+</script>
 
 <%- include('partials/footer') %>

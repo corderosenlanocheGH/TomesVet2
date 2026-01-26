@@ -47,14 +47,16 @@ CREATE TABLE IF NOT EXISTS vacunas (
   CONSTRAINT fk_vacuna_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
 );
 
-CREATE TABLE IF NOT EXISTS vacunas_nombres_comerciales (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(140) NOT NULL UNIQUE
-);
-
 CREATE TABLE IF NOT EXISTS vacunas_tipos (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(80) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS vacunas_nombres_comerciales (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(140) NOT NULL UNIQUE,
+  tipo_id INT NOT NULL,
+  CONSTRAINT fk_vacuna_nombre_tipo FOREIGN KEY (tipo_id) REFERENCES vacunas_tipos(id)
 );
 
 CREATE TABLE IF NOT EXISTS turnos (
@@ -106,15 +108,15 @@ VALUES
   (1, 'Rabivac', 'Antirrábica', '2024-08-20', '2025-08-20', 'RB-2024-001'),
   (2, 'Quintuple Vet', 'Quíntuple', '2024-07-15', '2025-01-15', 'QV-2024-014');
 
-INSERT INTO vacunas_nombres_comerciales (nombre)
-VALUES
-  ('Rabivac'),
-  ('Quintuple Vet');
-
 INSERT INTO vacunas_tipos (nombre)
 VALUES
   ('Antirrábica'),
   ('Quíntuple');
+
+INSERT INTO vacunas_nombres_comerciales (nombre, tipo_id)
+VALUES
+  ('Rabivac', 1),
+  ('Quintuple Vet', 2);
 
 INSERT INTO turnos (cliente_id, mascota_id, fecha, hora, motivo, estado)
 VALUES

@@ -24,6 +24,12 @@
                   placeholder="Agregar nuevo nombre comercial"
                   required
                 />
+                <select class="form-select" name="tipo_id" required>
+                  <option value="" disabled selected>Selecciona un tipo</option>
+                  <% tiposVacuna.forEach((tipo) => { %>
+                    <option value="<%= tipo.id %>"><%= tipo.nombre %></option>
+                  <% }) %>
+                </select>
                 <button class="btn btn-outline-primary" type="submit">Agregar</button>
               </form>
               <form
@@ -31,10 +37,12 @@
                 method="POST"
                 class="d-flex gap-2 flex-wrap mt-2"
               >
-                <select class="form-select" name="id" required>
+                <select class="form-select" name="id" id="nombre-comercial-editar" required>
                   <option value="" disabled selected>Selecciona para editar</option>
                   <% nombresComerciales.forEach((nombre) => { %>
-                    <option value="<%= nombre.id %>"><%= nombre.nombre %></option>
+                    <option value="<%= nombre.id %>" data-tipo-id="<%= nombre.tipo_id || '' %>">
+                      <%= nombre.nombre %>
+                    </option>
                   <% }) %>
                 </select>
                 <input
@@ -44,6 +52,12 @@
                   placeholder="Nuevo nombre comercial"
                   required
                 />
+                <select class="form-select" name="tipo_id" id="nombre-comercial-tipo" required>
+                  <option value="" disabled selected>Selecciona un tipo</option>
+                  <% tiposVacuna.forEach((tipo) => { %>
+                    <option value="<%= tipo.id %>"><%= tipo.nombre %></option>
+                  <% }) %>
+                </select>
                 <button class="btn btn-outline-secondary" type="submit">Actualizar</button>
               </form>
             </div>
@@ -86,5 +100,24 @@
     </div>
   </div>
 </main>
+
+<script>
+  const nombreEditarSelect = document.getElementById('nombre-comercial-editar');
+  const tipoEditarSelect = document.getElementById('nombre-comercial-tipo');
+
+  const actualizarTipoEditar = () => {
+    const selectedOption = nombreEditarSelect.options[nombreEditarSelect.selectedIndex];
+    const tipoId = selectedOption?.dataset?.tipoId || '';
+    if (!tipoId) {
+      tipoEditarSelect.value = '';
+      return;
+    }
+    tipoEditarSelect.value = tipoId;
+  };
+
+  if (nombreEditarSelect && tipoEditarSelect) {
+    nombreEditarSelect.addEventListener('change', actualizarTipoEditar);
+  }
+</script>
 
 <%- include('partials/footer') %>

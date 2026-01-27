@@ -31,6 +31,8 @@ const formatDateInput = (value) => {
   return '';
 };
 
+const TURNOS_ESTADOS = new Set(['Pendiente', 'Terminado', 'Cancelado']);
+
 app.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -440,6 +442,21 @@ app.post(
        VALUES (?, ?, ?, ?, ?)`,
       [cliente_id, mascota_id, fecha, hora, motivo]
     );
+    res.redirect('/turnos');
+  })
+);
+
+app.post(
+  '/turnos/:id/estado',
+  asyncHandler(async (req, res) => {
+    const estado = (req.body.estado || '').trim();
+    if (!TURNOS_ESTADOS.has(estado)) {
+      return res.redirect('/turnos');
+    }
+    await pool.query('UPDATE turnos SET estado = ? WHERE id = ?', [
+      estado,
+      req.params.id,
+    ]);
     res.redirect('/turnos');
   })
 );

@@ -31,47 +31,6 @@ const formatDateInput = (value) => {
   return '';
 };
 
-const fetchNombreComercialDetalles = async ({ nombreComercialId, nombreComercial }) => {
-  if (nombreComercialId) {
-    const [rows] = await pool.query(
-      `SELECT vacunas_nombres_comerciales.nombre,
-              vacunas_tipos.nombre AS tipo_nombre
-       FROM vacunas_nombres_comerciales
-       JOIN vacunas_tipos ON vacunas_tipos.id = vacunas_nombres_comerciales.tipo_id
-       WHERE vacunas_nombres_comerciales.id = ?`,
-      [nombreComercialId]
-    );
-    if (rows[0]) {
-      return {
-        nombre: rows[0].nombre,
-        tipo: rows[0].tipo_nombre,
-      };
-    }
-  }
-
-  if (nombreComercial) {
-    const [rows] = await pool.query(
-      `SELECT vacunas_nombres_comerciales.nombre,
-              vacunas_tipos.nombre AS tipo_nombre
-       FROM vacunas_nombres_comerciales
-       JOIN vacunas_tipos ON vacunas_tipos.id = vacunas_nombres_comerciales.tipo_id
-       WHERE vacunas_nombres_comerciales.nombre = ?`,
-      [nombreComercial]
-    );
-    if (rows[0]) {
-      return {
-        nombre: rows[0].nombre,
-        tipo: rows[0].tipo_nombre,
-      };
-    }
-  }
-
-  return {
-    nombre: nombreComercial || '',
-    tipo: '',
-  };
-};
-
 app.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -270,9 +229,14 @@ app.get(
   asyncHandler(async (req, res) => {
     const [vacunas] = await pool.query(
       `SELECT vacunas.*,
+              vacunas_nombres_comerciales.nombre AS nombre_comercial,
+              vacunas_tipos.nombre AS tipo,
               mascotas.nombre AS mascota_nombre,
               clientes.nombre AS cliente_nombre
        FROM vacunas
+       JOIN vacunas_nombres_comerciales
+         ON vacunas_nombres_comerciales.id = vacunas.nombre_comercial_id
+       JOIN vacunas_tipos ON vacunas_tipos.id = vacunas.tipo_id
        JOIN mascotas ON mascotas.id = vacunas.mascota_id
        JOIN clientes ON clientes.id = mascotas.cliente_id
        ORDER BY vacunas.fecha_aplicacion DESC`
@@ -301,16 +265,10 @@ app.get(
         req.query.editar,
       ]);
       if (rows[0]) {
-        const nombreRelacionado = nombresComerciales.find(
-          (nombre) => nombre.nombre === rows[0].nombre_comercial
-        );
-        const tipoRelacionado = tiposVacuna.find((tipo) => tipo.nombre === rows[0].tipo);
         vacunaEditar = {
           ...rows[0],
           fecha_aplicacion: formatDateInput(rows[0].fecha_aplicacion),
           proxima_fecha_aplicacion: formatDateInput(rows[0].proxima_fecha_aplicacion),
-          nombre_comercial_id: nombreRelacionado?.id || null,
-          tipo_id: nombreRelacionado?.tipo_id || tipoRelacionado?.id || null,
         };
       }
     }
@@ -329,29 +287,17 @@ app.post(
   asyncHandler(async (req, res) => {
     const {
       mascota_id,
-      nombre_comercial,
       nombre_comercial_id,
+      tipo_id,
       fecha_aplicacion,
       proxima_fecha_aplicacion,
       numero_serie,
     } = req.body;
-    const detallesNombre = await fetchNombreComercialDetalles({
-      nombreComercialId: nombre_comercial_id,
-      nombreComercial: nombre_comercial,
-    });
-    const nombreFinal = detallesNombre.nombre || nombre_comercial;
-    let tipo = detallesNombre.tipo;
-    if (!tipo && req.body.tipo) {
-      const [tipoRows] = await pool.query('SELECT nombre FROM vacunas_tipos WHERE id = ?', [
-        req.body.tipo,
-      ]);
-      tipo = tipoRows[0]?.nombre || req.body.tipo;
-    }
     await pool.query(
       `INSERT INTO vacunas (
         mascota_id,
-        nombre_comercial,
-        tipo,
+        nombre_comercial_id,
+        tipo_id,
         fecha_aplicacion,
         proxima_fecha_aplicacion,
         numero_serie
@@ -359,8 +305,8 @@ app.post(
       VALUES (?, ?, ?, ?, ?, ?)`,
       [
         mascota_id,
-        nombreFinal,
-        tipo,
+        nombre_comercial_id,
+        tipo_id,
         fecha_aplicacion,
         proxima_fecha_aplicacion || null,
         numero_serie || null,
@@ -375,37 +321,25 @@ app.post(
   asyncHandler(async (req, res) => {
     const {
       mascota_id,
-      nombre_comercial,
       nombre_comercial_id,
+      tipo_id,
       fecha_aplicacion,
       proxima_fecha_aplicacion,
       numero_serie,
     } = req.body;
-    const detallesNombre = await fetchNombreComercialDetalles({
-      nombreComercialId: nombre_comercial_id,
-      nombreComercial: nombre_comercial,
-    });
-    const nombreFinal = detallesNombre.nombre || nombre_comercial;
-    let tipo = detallesNombre.tipo;
-    if (!tipo && req.body.tipo) {
-      const [tipoRows] = await pool.query('SELECT nombre FROM vacunas_tipos WHERE id = ?', [
-        req.body.tipo,
-      ]);
-      tipo = tipoRows[0]?.nombre || req.body.tipo;
-    }
     await pool.query(
       `UPDATE vacunas
        SET mascota_id = ?,
-           nombre_comercial = ?,
-           tipo = ?,
+           nombre_comercial_id = ?,
+           tipo_id = ?,
            fecha_aplicacion = ?,
            proxima_fecha_aplicacion = ?,
            numero_serie = ?
        WHERE id = ?`,
       [
         mascota_id,
-        nombreFinal,
-        tipo,
+        nombre_comercial_id,
+        tipo_id,
         fecha_aplicacion,
         proxima_fecha_aplicacion || null,
         numero_serie || null,
@@ -434,25 +368,15 @@ app.post(
   '/vacunas/nombre-comercial/editar',
   asyncHandler(async (req, res) => {
     const { id, nombre, tipo_id } = req.body;
-    const [rows] = await pool.query(
-      'SELECT nombre FROM vacunas_nombres_comerciales WHERE id = ?',
-      [id]
-    );
-    if (rows[0]) {
-      const nombreAnterior = rows[0].nombre;
-      await pool.query(
-        'UPDATE vacunas_nombres_comerciales SET nombre = ?, tipo_id = ? WHERE id = ?',
-        [nombre, tipo_id, id]
-      );
-      const [tipoRows] = await pool.query('SELECT nombre FROM vacunas_tipos WHERE id = ?', [
-        tipo_id,
-      ]);
-      const tipoNombre = tipoRows[0]?.nombre;
-      await pool.query(
-        'UPDATE vacunas SET nombre_comercial = ?, tipo = ? WHERE nombre_comercial = ?',
-        [nombre, tipoNombre, nombreAnterior]
-      );
-    }
+    await pool.query('UPDATE vacunas_nombres_comerciales SET nombre = ?, tipo_id = ? WHERE id = ?', [
+      nombre,
+      tipo_id,
+      id,
+    ]);
+    await pool.query('UPDATE vacunas SET tipo_id = ? WHERE nombre_comercial_id = ?', [
+      tipo_id,
+      id,
+    ]);
     res.redirect('/vacunas/valores');
   })
 );
@@ -475,12 +399,7 @@ app.post(
   '/vacunas/tipo/editar',
   asyncHandler(async (req, res) => {
     const { id, nombre } = req.body;
-    const [rows] = await pool.query('SELECT nombre FROM vacunas_tipos WHERE id = ?', [id]);
-    if (rows[0]) {
-      const nombreAnterior = rows[0].nombre;
-      await pool.query('UPDATE vacunas_tipos SET nombre = ? WHERE id = ?', [nombre, id]);
-      await pool.query('UPDATE vacunas SET tipo = ? WHERE tipo = ?', [nombre, nombreAnterior]);
-    }
+    await pool.query('UPDATE vacunas_tipos SET nombre = ? WHERE id = ?', [nombre, id]);
     res.redirect('/vacunas/valores');
   })
 );

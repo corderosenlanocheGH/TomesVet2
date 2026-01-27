@@ -36,17 +36,6 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   CONSTRAINT fk_historia_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
 );
 
-CREATE TABLE IF NOT EXISTS vacunas (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  mascota_id INT NOT NULL,
-  nombre_comercial VARCHAR(140) NOT NULL,
-  tipo VARCHAR(80) NOT NULL,
-  fecha_aplicacion DATE NOT NULL,
-  proxima_fecha_aplicacion DATE,
-  numero_serie VARCHAR(120),
-  CONSTRAINT fk_vacuna_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
-);
-
 CREATE TABLE IF NOT EXISTS vacunas_tipos (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(80) NOT NULL UNIQUE
@@ -57,6 +46,20 @@ CREATE TABLE IF NOT EXISTS vacunas_nombres_comerciales (
   nombre VARCHAR(140) NOT NULL UNIQUE,
   tipo_id INT NOT NULL,
   CONSTRAINT fk_vacuna_nombre_tipo FOREIGN KEY (tipo_id) REFERENCES vacunas_tipos(id)
+);
+
+CREATE TABLE IF NOT EXISTS vacunas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  mascota_id INT NOT NULL,
+  nombre_comercial_id INT NOT NULL,
+  tipo_id INT NOT NULL,
+  fecha_aplicacion DATE NOT NULL,
+  proxima_fecha_aplicacion DATE,
+  numero_serie VARCHAR(120),
+  CONSTRAINT fk_vacuna_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas(id),
+  CONSTRAINT fk_vacuna_nombre_comercial
+    FOREIGN KEY (nombre_comercial_id) REFERENCES vacunas_nombres_comerciales(id),
+  CONSTRAINT fk_vacuna_tipo FOREIGN KEY (tipo_id) REFERENCES vacunas_tipos(id)
 );
 
 CREATE TABLE IF NOT EXISTS turnos (
@@ -96,18 +99,6 @@ VALUES
   (1, '2024-09-15', 'Vacunación anual', 'Se aplica vacuna múltiple', 'Reposo 24 horas'),
   (2, '2024-09-18', 'Control general', 'Buen estado general', 'Continuar dieta balanceada');
 
-INSERT INTO vacunas (
-  mascota_id,
-  nombre_comercial,
-  tipo,
-  fecha_aplicacion,
-  proxima_fecha_aplicacion,
-  numero_serie
-)
-VALUES
-  (1, 'Rabivac', 'Antirrábica', '2024-08-20', '2025-08-20', 'RB-2024-001'),
-  (2, 'Quintuple Vet', 'Quíntuple', '2024-07-15', '2025-01-15', 'QV-2024-014');
-
 INSERT INTO vacunas_tipos (nombre)
 VALUES
   ('Antirrábica'),
@@ -117,6 +108,18 @@ INSERT INTO vacunas_nombres_comerciales (nombre, tipo_id)
 VALUES
   ('Rabivac', 1),
   ('Quintuple Vet', 2);
+
+INSERT INTO vacunas (
+  mascota_id,
+  nombre_comercial_id,
+  tipo_id,
+  fecha_aplicacion,
+  proxima_fecha_aplicacion,
+  numero_serie
+)
+VALUES
+  (1, 1, 1, '2024-08-20', '2025-08-20', 'RB-2024-001'),
+  (2, 2, 2, '2024-07-15', '2025-01-15', 'QV-2024-014');
 
 INSERT INTO turnos (cliente_id, mascota_id, fecha, hora, motivo, estado)
 VALUES

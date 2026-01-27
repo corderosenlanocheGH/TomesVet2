@@ -4,59 +4,67 @@
 
 <main class="content-area">
   <div class="row g-4">
-    <div class="col-lg-4">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <h4 class="card-title mb-3">Solicitar turno</h4>
-          <form action="/turnos" method="POST" class="d-grid gap-3">
-            <div>
-              <label class="form-label">Cliente</label>
-              <select class="form-select" name="cliente_id" id="cliente-select" required>
-                <option value="" disabled selected>Selecciona un cliente</option>
-                <% clientes.forEach((cliente) => { %>
-                  <option value="<%= cliente.id %>"><%= cliente.nombre %></option>
-                <% }) %>
-              </select>
-            </div>
-            <div>
-              <label class="form-label">Mascota</label>
-              <select class="form-select" name="mascota_id" id="mascota-select" required>
-                <option value="" disabled selected>Selecciona una mascota</option>
-                <% mascotas.forEach((mascota) => { %>
-                  <option value="<%= mascota.id %>" data-cliente-id="<%= mascota.cliente_id %>">
-                    <%= mascota.nombre %> (Cliente: <%= mascota.cliente_nombre %>)
-                  </option>
-                <% }) %>
-              </select>
-            </div>
-            <div>
-              <label class="form-label">Fecha</label>
-              <input class="form-control" type="date" name="fecha" required />
-            </div>
-            <div>
-              <label class="form-label">Hora</label>
-              <input class="form-control" type="time" name="hora" required />
-            </div>
-            <div>
-              <label class="form-label">Motivo</label>
-              <select class="form-select" name="motivo" required>
-                <option value="" disabled selected>Selecciona un motivo</option>
-                <% motivosTurno.forEach((motivo) => { %>
-                  <option value="<%= motivo.nombre %>"><%= motivo.nombre %></option>
-                <% }) %>
-              </select>
-            </div>
-            <button class="btn btn-primary" type="submit">Agendar</button>
-          </form>
+    <% if (showForm) { %>
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h4 class="card-title mb-3">Solicitar turno</h4>
+            <form action="/turnos" method="POST" class="d-grid gap-3">
+              <div>
+                <label class="form-label">Cliente</label>
+                <select class="form-select" name="cliente_id" id="cliente-select" required>
+                  <option value="" disabled selected>Selecciona un cliente</option>
+                  <% clientes.forEach((cliente) => { %>
+                    <option value="<%= cliente.id %>"><%= cliente.nombre %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Mascota</label>
+                <select class="form-select" name="mascota_id" id="mascota-select" required>
+                  <option value="" disabled selected>Selecciona una mascota</option>
+                  <% mascotas.forEach((mascota) => { %>
+                    <option value="<%= mascota.id %>" data-cliente-id="<%= mascota.cliente_id %>">
+                      <%= mascota.nombre %> (Cliente: <%= mascota.cliente_nombre %>)
+                    </option>
+                  <% }) %>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Fecha</label>
+                <input class="form-control" type="date" name="fecha" required />
+              </div>
+              <div>
+                <label class="form-label">Hora</label>
+                <input class="form-control" type="time" name="hora" required />
+              </div>
+              <div>
+                <label class="form-label">Motivo</label>
+                <select class="form-select" name="motivo" required>
+                  <option value="" disabled selected>Selecciona un motivo</option>
+                  <% motivosTurno.forEach((motivo) => { %>
+                    <option value="<%= motivo.nombre %>"><%= motivo.nombre %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-primary" type="submit">Agendar</button>
+                <a class="btn btn-outline-secondary" href="/turnos">Cancelar</a>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="col-lg-8">
+    <% } %>
+    <div class="<%= showForm ? 'col-lg-8' : 'col-12' %>">
       <div class="card border-0 shadow-sm">
         <div class="card-body">
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
             <h4 class="card-title mb-0">Turnos registrados</h4>
             <div class="d-flex flex-wrap gap-2 turnos-filters">
+              <div class="d-flex align-items-end">
+                <a class="btn btn-primary" href="/turnos?nuevo=1">Nuevo turno</a>
+              </div>
               <div>
                 <label class="form-label mb-1" for="turnos-busqueda">Buscar</label>
                 <input
@@ -130,13 +138,18 @@
 <script>
   const clienteSelect = document.getElementById('cliente-select');
   const mascotaSelect = document.getElementById('mascota-select');
-  const mascotaOptions = Array.from(mascotaSelect.querySelectorAll('option'));
+  const mascotaOptions = mascotaSelect
+    ? Array.from(mascotaSelect.querySelectorAll('option'))
+    : [];
   const turnosBody = document.getElementById('turnos-body');
   const estadoSelect = document.getElementById('turnos-estado');
   const buscarInput = document.getElementById('turnos-busqueda');
   const limpiarButton = document.getElementById('turnos-limpiar');
 
   const renderMascotas = (clienteId) => {
+    if (!mascotaSelect) {
+      return;
+    }
     mascotaSelect.innerHTML = '';
     const placeholder = document.createElement('option');
     placeholder.value = '';
@@ -151,9 +164,11 @@
       .forEach((option) => mascotaSelect.appendChild(option));
   };
 
-  clienteSelect.addEventListener('change', (event) => {
-    renderMascotas(event.target.value);
-  });
+  if (clienteSelect && mascotaSelect) {
+    clienteSelect.addEventListener('change', (event) => {
+      renderMascotas(event.target.value);
+    });
+  }
 
   const normalizeText = (value = '') =>
     value

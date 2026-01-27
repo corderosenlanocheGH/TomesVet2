@@ -70,13 +70,14 @@ app.get(
   asyncHandler(async (req, res) => {
     const [clientes] = await pool.query('SELECT * FROM clientes ORDER BY id DESC');
     let clienteEditar = null;
+    const showForm = Boolean(req.query.editar || req.query.nuevo);
     if (req.query.editar) {
       const [rows] = await pool.query('SELECT * FROM clientes WHERE id = ?', [
         req.query.editar,
       ]);
       [clienteEditar] = rows;
     }
-    res.render('clientes', { clientes, clienteEditar });
+    res.render('clientes', { clientes, clienteEditar, showForm });
   })
 );
 
@@ -115,6 +116,7 @@ app.get(
     );
     const [clientes] = await pool.query('SELECT id, nombre FROM clientes ORDER BY nombre');
     let mascotaEditar = null;
+    const showForm = Boolean(req.query.editar || req.query.nuevo);
     if (req.query.editar) {
       const [rows] = await pool.query('SELECT * FROM mascotas WHERE id = ?', [
         req.query.editar,
@@ -126,7 +128,7 @@ app.get(
         };
       }
     }
-    res.render('mascotas', { mascotas, clientes, mascotaEditar });
+    res.render('mascotas', { mascotas, clientes, mascotaEditar, showForm });
   })
 );
 
@@ -262,6 +264,7 @@ app.get(
     );
     const [tiposVacuna] = await pool.query('SELECT id, nombre FROM vacunas_tipos ORDER BY nombre');
     let vacunaEditar = null;
+    const showForm = Boolean(req.query.editar || req.query.nuevo);
     if (req.query.editar) {
       const [rows] = await pool.query('SELECT * FROM vacunas WHERE id = ?', [
         req.query.editar,
@@ -280,6 +283,7 @@ app.get(
       vacunaEditar,
       nombresComerciales,
       tiposVacuna,
+      showForm,
     });
   })
 );
@@ -429,7 +433,8 @@ app.get(
     const [motivosTurno] = await pool.query(
       'SELECT id, nombre FROM motivos_turno ORDER BY nombre'
     );
-    res.render('turnos', { turnos, clientes, mascotas, motivosTurno });
+    const showForm = Boolean(req.query.nuevo);
+    res.render('turnos', { turnos, clientes, mascotas, motivosTurno, showForm });
   })
 );
 

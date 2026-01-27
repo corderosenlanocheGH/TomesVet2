@@ -3,71 +3,74 @@
 
 <main class="content-area">
   <div class="row g-4">
-    <div class="col-lg-4">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <h4 class="card-title mb-3">
-            <%= clienteEditar ? 'Editar cliente' : 'Nuevo cliente' %>
-          </h4>
-          <form
-            action="<%= clienteEditar ? `/clientes/${clienteEditar.id}` : '/clientes' %>"
-            method="POST"
-            class="d-grid gap-3"
-          >
-            <div>
-              <label class="form-label">Nombre completo</label>
-              <input
-                class="form-control"
-                type="text"
-                name="nombre"
-                value="<%= clienteEditar ? clienteEditar.nombre : '' %>"
-                required
-              />
-            </div>
-            <div>
-              <label class="form-label">Teléfono</label>
-              <input
-                class="form-control"
-                type="text"
-                name="telefono"
-                value="<%= clienteEditar ? clienteEditar.telefono : '' %>"
-                required
-              />
-            </div>
-            <div>
-              <label class="form-label">Email</label>
-              <input
-                class="form-control"
-                type="email"
-                name="email"
-                value="<%= clienteEditar ? clienteEditar.email || '' : '' %>"
-              />
-            </div>
-            <div>
-              <label class="form-label">Dirección</label>
-              <input
-                class="form-control"
-                type="text"
-                name="direccion"
-                value="<%= clienteEditar ? clienteEditar.direccion || '' : '' %>"
-              />
-            </div>
-            <div class="d-flex gap-2">
-              <button class="btn btn-primary" type="submit">
-                <%= clienteEditar ? 'Actualizar' : 'Guardar' %>
-              </button>
-              <% if (clienteEditar) { %>
+    <% if (showForm) { %>
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h4 class="card-title mb-3">
+              <%= clienteEditar ? 'Editar cliente' : 'Nuevo cliente' %>
+            </h4>
+            <form
+              action="<%= clienteEditar ? `/clientes/${clienteEditar.id}` : '/clientes' %>"
+              method="POST"
+              class="d-grid gap-3"
+            >
+              <div>
+                <label class="form-label">Nombre completo</label>
+                <input
+                  class="form-control"
+                  type="text"
+                  name="nombre"
+                  value="<%= clienteEditar ? clienteEditar.nombre : '' %>"
+                  required
+                />
+              </div>
+              <div>
+                <label class="form-label">Teléfono</label>
+                <input
+                  class="form-control"
+                  type="text"
+                  name="telefono"
+                  value="<%= clienteEditar ? clienteEditar.telefono : '' %>"
+                  required
+                />
+              </div>
+              <div>
+                <label class="form-label">Email</label>
+                <input
+                  class="form-control"
+                  type="email"
+                  name="email"
+                  value="<%= clienteEditar ? clienteEditar.email || '' : '' %>"
+                />
+              </div>
+              <div>
+                <label class="form-label">Dirección</label>
+                <input
+                  class="form-control"
+                  type="text"
+                  name="direccion"
+                  value="<%= clienteEditar ? clienteEditar.direccion || '' : '' %>"
+                />
+              </div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-primary" type="submit">
+                  <%= clienteEditar ? 'Actualizar' : 'Guardar' %>
+                </button>
                 <a class="btn btn-outline-secondary" href="/clientes">Cancelar</a>
-              <% } %>
-            </div>
-          </form>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="col-lg-8">
+    <% } %>
+    <div class="<%= showForm ? 'col-lg-8' : 'col-12' %>">
       <div class="card border-0 shadow-sm">
         <div class="card-body">
-          <h4 class="card-title mb-3">Clientes</h4>
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <h4 class="card-title mb-0">Clientes</h4>
+            <a class="btn btn-primary" href="/clientes?nuevo=1">Nuevo cliente</a>
+          </div>
           <div class="table-responsive">
             <table class="table align-middle">
               <thead>

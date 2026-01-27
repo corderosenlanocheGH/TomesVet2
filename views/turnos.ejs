@@ -1,5 +1,24 @@
 <%- include('partials/head', { title: 'Turnos | TomesVet' }) %>
 <% const estadosTurno = ['Pendiente', 'Terminado', 'Cancelado']; %>
+<%
+  const formatShortDate = (value = '') => {
+    if (!value) return '';
+    const normalized = value.toString().split('T')[0];
+    const [year, month, day] = normalized.split('-');
+    if (year && month && day) {
+      return `${day}/${month}/${year}`;
+    }
+    return value;
+  };
+  const formatShortTime = (value = '') => {
+    if (!value) return '';
+    const [hours, minutes] = value.toString().split(':');
+    if (hours && minutes) {
+      return `${hours}:${minutes}`;
+    }
+    return value;
+  };
+%>
 <%- include('partials/nav') %>
 
 <main class="content-area">
@@ -102,8 +121,8 @@
                   <tr data-estado="<%= turno.estado %>">
                     <td><%= turno.cliente_nombre %></td>
                     <td><%= turno.mascota_nombre %></td>
-                    <td><%= turno.fecha %></td>
-                    <td><%= turno.hora %></td>
+                    <td><%= formatShortDate(turno.fecha) %></td>
+                    <td><%= formatShortTime(turno.hora) %></td>
                     <td><%= turno.motivo %></td>
                     <td>
                       <form
@@ -112,15 +131,22 @@
                         class="d-flex flex-column gap-2 turno-estado-form"
                       >
                         <span class="status-pill" data-status="<%= turno.estado %>"><%= turno.estado %></span>
-                        <div class="d-flex flex-wrap gap-2">
-                          <select class="form-select form-select-sm" name="estado" required>
-                            <% estadosTurno.forEach((estado) => { %>
-                              <option value="<%= estado %>" <%= turno.estado === estado ? 'selected' : '' %>>
+                        <div class="d-flex flex-wrap gap-3">
+                          <% estadosTurno.forEach((estado) => { %>
+                            <div class="form-check">
+                              <input
+                                class="form-check-input"
+                                type="radio"
+                                name="estado"
+                                id="estado-<%= turno.id %>-<%= estado %>"
+                                value="<%= estado %>"
+                                <%= turno.estado === estado ? 'checked' : '' %>
+                              />
+                              <label class="form-check-label" for="estado-<%= turno.id %>-<%= estado %>">
                                 <%= estado %>
-                              </option>
-                            <% }) %>
-                          </select>
-                          <button class="btn btn-outline-primary btn-sm" type="submit">Actualizar</button>
+                              </label>
+                            </div>
+                          <% }) %>
                         </div>
                       </form>
                     </td>
@@ -185,6 +211,14 @@
   });
 
   const turnosRows = Array.from(turnosBody?.querySelectorAll('tr') || []);
+  const estadoForms = Array.from(document.querySelectorAll('.turno-estado-form'));
+  estadoForms.forEach((form) => {
+    form.addEventListener('change', (event) => {
+      if (event.target?.name === 'estado') {
+        form.submit();
+      }
+    });
+  });
   estadosTurno.forEach((estado) => {
     const option = document.createElement('option');
     option.value = estado;

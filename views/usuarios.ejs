@@ -2,6 +2,34 @@
 <%- include('partials/nav') %>
 
 <main class="content-area">
+  <section class="page-header">
+    <div>
+      <div class="page-eyebrow">
+        <i class="bi bi-people"></i>
+        USUARIOS
+      </div>
+      <div class="page-title-row">
+        <h2 class="page-title">Tienda Veterinaria</h2>
+        <span class="page-badge">
+          <i class="bi bi-plus-circle"></i>
+          Nuevo
+        </span>
+      </div>
+      <p class="page-subtitle">
+        Gestiona el equipo que atiende la clínica con roles, accesos y datos de contacto.
+      </p>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-light" type="button">
+        <i class="bi bi-download"></i>
+        Exportar
+      </button>
+      <button class="btn btn-primary" type="button">
+        <i class="bi bi-person-plus"></i>
+        Invitar usuario
+      </button>
+    </div>
+  </section>
   <div class="row g-4">
     <div class="col-lg-4">
       <div class="card border-0 shadow-sm">
@@ -65,7 +93,36 @@
     <div class="col-lg-8">
       <div class="card border-0 shadow-sm">
         <div class="card-body">
-          <h4 class="card-title mb-3">Usuarios del sistema</h4>
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div>
+              <h4 class="card-title mb-1">Usuarios del sistema</h4>
+              <p class="text-muted mb-0">Listado actualizado con permisos y estado.</p>
+            </div>
+            <div class="filters-bar">
+              <div class="filters-group">
+                <label class="filters-label">Mostrar</label>
+                <select class="form-select form-select-sm">
+                  <option>10</option>
+                  <option>25</option>
+                  <option>50</option>
+                </select>
+              </div>
+              <div class="filters-group">
+                <label class="filters-label">Rol</label>
+                <select class="form-select form-select-sm">
+                  <option>Todos</option>
+                  <option>Veterinario</option>
+                  <option>Asistente</option>
+                  <option>Recepción</option>
+                  <option>Administrador</option>
+                </select>
+              </div>
+              <div class="filters-group filters-search">
+                <label class="filters-label">Buscar</label>
+                <input class="form-control form-control-sm" type="search" placeholder="Nombre o email" />
+              </div>
+            </div>
+          </div>
           <div class="table-responsive">
             <table class="table align-middle">
               <thead>

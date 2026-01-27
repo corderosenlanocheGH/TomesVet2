@@ -1,4 +1,31 @@
 <%- include('partials/head', { title: 'Vacunas | TomesVet' }) %>
+<%
+  const formatInputDate = (value = '') => {
+    if (!value) return '';
+    const normalized = value.toString().split('T')[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+      return normalized;
+    }
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString().slice(0, 10);
+    }
+    return '';
+  };
+  const formatShortDate = (value = '') => {
+    if (!value) return '';
+    const normalized = value.toString().split('T')[0];
+    const [year, month, day] = normalized.split('-');
+    if (year && month && day) {
+      return `${day}/${month}/${year}`;
+    }
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString('es-AR');
+    }
+    return value;
+  };
+%>
 <%- include('partials/nav') %>
 
 <main class="content-area">
@@ -73,7 +100,7 @@
                   class="form-control"
                   type="date"
                   name="fecha_aplicacion"
-                  value="<%= vacunaEditar ? vacunaEditar.fecha_aplicacion : '' %>"
+                  value="<%= vacunaEditar ? formatInputDate(vacunaEditar.fecha_aplicacion) : '' %>"
                   required
                 />
               </div>
@@ -83,7 +110,7 @@
                   class="form-control"
                   type="date"
                   name="proxima_fecha_aplicacion"
-                  value="<%= vacunaEditar ? vacunaEditar.proxima_fecha_aplicacion || '' : '' %>"
+                  value="<%= vacunaEditar ? formatInputDate(vacunaEditar.proxima_fecha_aplicacion) : '' %>"
                 />
               </div>
               <div>
@@ -134,8 +161,8 @@
                     <td><%= vacuna.cliente_nombre %></td>
                     <td><%= vacuna.nombre_comercial %></td>
                     <td><%= vacuna.tipo %></td>
-                    <td><%= vacuna.fecha_aplicacion %></td>
-                    <td><%= vacuna.proxima_fecha_aplicacion || '-' %></td>
+                    <td><%= formatShortDate(vacuna.fecha_aplicacion) %></td>
+                    <td><%= formatShortDate(vacuna.proxima_fecha_aplicacion) || '-' %></td>
                     <td><%= vacuna.numero_serie || '-' %></td>
                     <td class="text-end">
                       <a class="btn btn-sm btn-outline-primary" href="/vacunas?editar=<%= vacuna.id %>">

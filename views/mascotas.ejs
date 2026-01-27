@@ -1,4 +1,31 @@
 <%- include('partials/head', { title: 'Mascotas | TomesVet' }) %>
+<%
+  const formatInputDate = (value = '') => {
+    if (!value) return '';
+    const normalized = value.toString().split('T')[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+      return normalized;
+    }
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString().slice(0, 10);
+    }
+    return '';
+  };
+  const formatShortDate = (value = '') => {
+    if (!value) return '';
+    const normalized = value.toString().split('T')[0];
+    const [year, month, day] = normalized.split('-');
+    if (year && month && day) {
+      return `${day}/${month}/${year}`;
+    }
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString('es-AR');
+    }
+    return value;
+  };
+%>
 <%- include('partials/nav') %>
 
 <main class="content-area">
@@ -50,7 +77,7 @@
                   class="form-control"
                   type="date"
                   name="fecha_nacimiento"
-                  value="<%= mascotaEditar ? mascotaEditar.fecha_nacimiento : '' %>"
+                  value="<%= mascotaEditar ? formatInputDate(mascotaEditar.fecha_nacimiento) : '' %>"
                 />
               </div>
               <div>
@@ -103,7 +130,7 @@
                     <td><%= mascota.nombre %></td>
                     <td><%= mascota.especie %></td>
                     <td><%= mascota.raza || '-' %></td>
-                    <td><%= mascota.fecha_nacimiento || '-' %></td>
+                    <td><%= formatShortDate(mascota.fecha_nacimiento) || '-' %></td>
                     <td><%= mascota.cliente_nombre %></td>
                     <td class="text-end">
                       <a class="btn btn-sm btn-outline-primary" href="/mascotas?editar=<%= mascota.id %>">

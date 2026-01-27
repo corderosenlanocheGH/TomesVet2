@@ -31,6 +31,47 @@ const formatDateInput = (value) => {
   return '';
 };
 
+const fetchNombreComercialDetalles = async ({ nombreComercialId, nombreComercial }) => {
+  if (nombreComercialId) {
+    const [rows] = await pool.query(
+      `SELECT vacunas_nombres_comerciales.nombre,
+              vacunas_tipos.nombre AS tipo_nombre
+       FROM vacunas_nombres_comerciales
+       JOIN vacunas_tipos ON vacunas_tipos.id = vacunas_nombres_comerciales.tipo_id
+       WHERE vacunas_nombres_comerciales.id = ?`,
+      [nombreComercialId]
+    );
+    if (rows[0]) {
+      return {
+        nombre: rows[0].nombre,
+        tipo: rows[0].tipo_nombre,
+      };
+    }
+  }
+
+  if (nombreComercial) {
+    const [rows] = await pool.query(
+      `SELECT vacunas_nombres_comerciales.nombre,
+              vacunas_tipos.nombre AS tipo_nombre
+       FROM vacunas_nombres_comerciales
+       JOIN vacunas_tipos ON vacunas_tipos.id = vacunas_nombres_comerciales.tipo_id
+       WHERE vacunas_nombres_comerciales.nombre = ?`,
+      [nombreComercial]
+    );
+    if (rows[0]) {
+      return {
+        nombre: rows[0].nombre,
+        tipo: rows[0].tipo_nombre,
+      };
+    }
+  }
+
+  return {
+    nombre: nombreComercial || '',
+    tipo: '',
+  };
+};
+
 app.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -260,10 +301,16 @@ app.get(
         req.query.editar,
       ]);
       if (rows[0]) {
+        const nombreRelacionado = nombresComerciales.find(
+          (nombre) => nombre.nombre === rows[0].nombre_comercial
+        );
+        const tipoRelacionado = tiposVacuna.find((tipo) => tipo.nombre === rows[0].tipo);
         vacunaEditar = {
           ...rows[0],
           fecha_aplicacion: formatDateInput(rows[0].fecha_aplicacion),
           proxima_fecha_aplicacion: formatDateInput(rows[0].proxima_fecha_aplicacion),
+          nombre_comercial_id: nombreRelacionado?.id || null,
+          tipo_id: nombreRelacionado?.tipo_id || tipoRelacionado?.id || null,
         };
       }
     }
@@ -283,18 +330,23 @@ app.post(
     const {
       mascota_id,
       nombre_comercial,
+      nombre_comercial_id,
       fecha_aplicacion,
       proxima_fecha_aplicacion,
       numero_serie,
     } = req.body;
-    const [tipoRows] = await pool.query(
-      `SELECT vacunas_tipos.nombre AS tipo_nombre
-       FROM vacunas_nombres_comerciales
-       JOIN vacunas_tipos ON vacunas_tipos.id = vacunas_nombres_comerciales.tipo_id
-       WHERE vacunas_nombres_comerciales.nombre = ?`,
-      [nombre_comercial]
-    );
-    const tipo = tipoRows[0]?.tipo_nombre || req.body.tipo;
+    const detallesNombre = await fetchNombreComercialDetalles({
+      nombreComercialId: nombre_comercial_id,
+      nombreComercial: nombre_comercial,
+    });
+    const nombreFinal = detallesNombre.nombre || nombre_comercial;
+    let tipo = detallesNombre.tipo;
+    if (!tipo && req.body.tipo) {
+      const [tipoRows] = await pool.query('SELECT nombre FROM vacunas_tipos WHERE id = ?', [
+        req.body.tipo,
+      ]);
+      tipo = tipoRows[0]?.nombre || req.body.tipo;
+    }
     await pool.query(
       `INSERT INTO vacunas (
         mascota_id,
@@ -307,7 +359,7 @@ app.post(
       VALUES (?, ?, ?, ?, ?, ?)`,
       [
         mascota_id,
-        nombre_comercial,
+        nombreFinal,
         tipo,
         fecha_aplicacion,
         proxima_fecha_aplicacion || null,
@@ -324,18 +376,23 @@ app.post(
     const {
       mascota_id,
       nombre_comercial,
+      nombre_comercial_id,
       fecha_aplicacion,
       proxima_fecha_aplicacion,
       numero_serie,
     } = req.body;
-    const [tipoRows] = await pool.query(
-      `SELECT vacunas_tipos.nombre AS tipo_nombre
-       FROM vacunas_nombres_comerciales
-       JOIN vacunas_tipos ON vacunas_tipos.id = vacunas_nombres_comerciales.tipo_id
-       WHERE vacunas_nombres_comerciales.nombre = ?`,
-      [nombre_comercial]
-    );
-    const tipo = tipoRows[0]?.tipo_nombre || req.body.tipo;
+    const detallesNombre = await fetchNombreComercialDetalles({
+      nombreComercialId: nombre_comercial_id,
+      nombreComercial: nombre_comercial,
+    });
+    const nombreFinal = detallesNombre.nombre || nombre_comercial;
+    let tipo = detallesNombre.tipo;
+    if (!tipo && req.body.tipo) {
+      const [tipoRows] = await pool.query('SELECT nombre FROM vacunas_tipos WHERE id = ?', [
+        req.body.tipo,
+      ]);
+      tipo = tipoRows[0]?.nombre || req.body.tipo;
+    }
     await pool.query(
       `UPDATE vacunas
        SET mascota_id = ?,
@@ -347,7 +404,7 @@ app.post(
        WHERE id = ?`,
       [
         mascota_id,
-        nombre_comercial,
+        nombreFinal,
         tipo,
         fecha_aplicacion,
         proxima_fecha_aplicacion || null,

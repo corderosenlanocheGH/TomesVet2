@@ -29,40 +29,39 @@
               </select>
             </div>
             <div>
-              <label class="form-label">Nombre comercial</label>
-              <select class="form-select" name="nombre_comercial" id="vacuna-nombre-comercial" required>
-                <option value="" disabled <%= vacunaEditar ? '' : 'selected' %>>
-                  Selecciona un nombre comercial
-                </option>
-                <% nombresComerciales.forEach((nombre) => { %>
-                  <option
-                    value="<%= nombre.nombre %>"
-                    data-tipo="<%= nombre.tipo_nombre || '' %>"
-                    <%= vacunaEditar && vacunaEditar.nombre_comercial === nombre.nombre ? 'selected' : '' %>
-                  >
-                    <%= nombre.nombre %>
-                  </option>
-                <% }) %>
-              </select>
-            </div>
-            <div>
-              <label class="form-label">Tipo (según nombre comercial)</label>
-              <select
-                class="form-select"
-                name="tipo"
-                id="vacuna-tipo"
-                required
-                disabled
-              >
+              <label class="form-label">Tipo</label>
+              <select class="form-select" name="tipo" id="vacuna-tipo" required>
                 <option value="" disabled <%= vacunaEditar ? '' : 'selected' %>>
                   Selecciona un tipo
                 </option>
                 <% tiposVacuna.forEach((tipo) => { %>
                   <option
-                    value="<%= tipo.nombre %>"
-                    <%= vacunaEditar && vacunaEditar.tipo === tipo.nombre ? 'selected' : '' %>
+                    value="<%= tipo.id %>"
+                    <%= vacunaEditar && vacunaEditar.tipo_id === tipo.id ? 'selected' : '' %>
                   >
                     <%= tipo.nombre %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Nombre comercial</label>
+              <select
+                class="form-select"
+                name="nombre_comercial_id"
+                id="vacuna-nombre-comercial"
+                required
+              >
+                <option value="" disabled <%= vacunaEditar ? '' : 'selected' %>>
+                  Selecciona un nombre comercial
+                </option>
+                <% nombresComerciales.forEach((nombre) => { %>
+                  <option
+                    value="<%= nombre.id %>"
+                    data-tipo-id="<%= nombre.tipo_id %>"
+                    <%= vacunaEditar && vacunaEditar.nombre_comercial_id === nombre.id ? 'selected' : '' %>
+                  >
+                    <%= nombre.nombre %>
                   </option>
                 <% }) %>
               </select>
@@ -155,19 +154,34 @@
   const nombreSelect = document.getElementById('vacuna-nombre-comercial');
   const tipoSelect = document.getElementById('vacuna-tipo');
 
-  const actualizarTipo = () => {
-    const selectedOption = nombreSelect.options[nombreSelect.selectedIndex];
-    const tipoRelacionado = selectedOption?.dataset?.tipo || '';
-    if (!tipoRelacionado) {
-      tipoSelect.value = '';
+  const actualizarNombres = () => {
+    const tipoId = tipoSelect?.value || '';
+    const options = Array.from(nombreSelect.options).filter((option) => option.value);
+    let selectedMatch = false;
+
+    options.forEach((option) => {
+      const coincideTipo = tipoId && option.dataset.tipoId === tipoId;
+      option.hidden = !coincideTipo;
+      if (coincideTipo && option.value === nombreSelect.value) {
+        selectedMatch = true;
+      }
+    });
+
+    if (!tipoId) {
+      nombreSelect.value = '';
+      nombreSelect.disabled = true;
       return;
     }
-    tipoSelect.value = tipoRelacionado;
+
+    nombreSelect.disabled = false;
+    if (!selectedMatch) {
+      nombreSelect.value = '';
+    }
   };
 
   if (nombreSelect && tipoSelect) {
-    nombreSelect.addEventListener('change', actualizarTipo);
-    actualizarTipo();
+    tipoSelect.addEventListener('change', actualizarNombres);
+    actualizarNombres();
   }
 </script>
 

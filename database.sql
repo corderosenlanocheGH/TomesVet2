@@ -124,7 +124,7 @@ VALUES
 INSERT INTO turnos (cliente_id, mascota_id, fecha, hora, motivo, estado)
 VALUES
   (1, 1, '2024-10-02', '09:30:00', 'Consulta general', 'Pendiente'),
-  (2, 2, '2024-10-03', '11:00:00', 'Control postoperatorio', 'Confirmado');
+  (2, 2, '2024-10-03', '11:00:00', 'Control postoperatorio', 'Terminado');
 
 INSERT INTO motivos_turno (nombre)
 VALUES

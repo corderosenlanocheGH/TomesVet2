@@ -1,4 +1,5 @@
 <%- include('partials/head', { title: 'Turnos | TomesVet' }) %>
+<% const estadosTurno = ['Pendiente', 'Terminado', 'Cancelado']; %>
 <%- include('partials/nav') %>
 
 <main class="content-area">
@@ -97,7 +98,23 @@
                     <td><%= turno.hora %></td>
                     <td><%= turno.motivo %></td>
                     <td>
-                      <span class="status-pill" data-status="<%= turno.estado %>"><%= turno.estado %></span>
+                      <form
+                        action="/turnos/<%= turno.id %>/estado"
+                        method="POST"
+                        class="d-flex flex-column gap-2 turno-estado-form"
+                      >
+                        <span class="status-pill" data-status="<%= turno.estado %>"><%= turno.estado %></span>
+                        <div class="d-flex flex-wrap gap-2">
+                          <select class="form-select form-select-sm" name="estado" required>
+                            <% estadosTurno.forEach((estado) => { %>
+                              <option value="<%= estado %>" <%= turno.estado === estado ? 'selected' : '' %>>
+                                <%= estado %>
+                              </option>
+                            <% }) %>
+                          </select>
+                          <button class="btn btn-outline-primary btn-sm" type="submit">Actualizar</button>
+                        </div>
+                      </form>
                     </td>
                   </tr>
                 <% }) %>
@@ -145,6 +162,7 @@
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
 
+  const estadosTurno = <%- JSON.stringify(estadosTurno) %>;
   const statusPills = Array.from(document.querySelectorAll('.status-pill'));
   statusPills.forEach((pill) => {
     const slug = normalizeText(pill.dataset.status).replace(/\s+/g, '-');
@@ -152,11 +170,7 @@
   });
 
   const turnosRows = Array.from(turnosBody?.querySelectorAll('tr') || []);
-  const estados = Array.from(
-    new Set(turnosRows.map((row) => row.dataset.estado).filter(Boolean))
-  ).sort((a, b) => a.localeCompare(b, 'es'));
-
-  estados.forEach((estado) => {
+  estadosTurno.forEach((estado) => {
     const option = document.createElement('option');
     option.value = estado;
     option.textContent = estado;

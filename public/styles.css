@@ -262,28 +262,15 @@ body {
   color: #92400e;
 }
 
-.status-pill[data-status-slug="confirmado"],
-.status-pill[data-status-slug="confirmada"] {
+.status-pill[data-status-slug="terminado"] {
   background: #bbf7d0;
   color: #166534;
 }
 
-.status-pill[data-status-slug="completado"],
-.status-pill[data-status-slug="finalizado"] {
-  background: #bae6fd;
-  color: #075985;
-}
-
 .status-pill[data-status-slug="cancelado"],
 .status-pill[data-status-slug="cancelada"] {
-  background: #fecaca;
-  color: #991b1b;
-}
-
-.status-pill[data-status-slug="reprogramado"],
-.status-pill[data-status-slug="reprogramada"] {
-  background: #fbcfe8;
-  color: #9d174d;
+  background: #e2e8f0;
+  color: #475569;
 }
 
 .is-hidden {

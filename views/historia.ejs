@@ -1,4 +1,19 @@
 <%- include('partials/head', { title: 'Historia clínica | TomesVet' }) %>
+<%
+  const formatShortDate = (value = '') => {
+    if (!value) return '';
+    const normalized = value.toString().split('T')[0];
+    const [year, month, day] = normalized.split('-');
+    if (year && month && day) {
+      return `${day}/${month}/${year}`;
+    }
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString('es-AR');
+    }
+    return value;
+  };
+%>
 <%- include('partials/nav') %>
 
 <main class="content-area">
@@ -57,7 +72,7 @@
                 <% historias.forEach((historia) => { %>
                   <tr>
                     <td><%= historia.mascota_nombre %></td>
-                    <td><%= historia.fecha %></td>
+                    <td><%= formatShortDate(historia.fecha) %></td>
                     <td><%= historia.motivo %></td>
                     <td><%= historia.diagnostico %></td>
                     <td><%= historia.tratamiento %></td>

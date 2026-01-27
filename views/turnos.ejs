@@ -3,6 +3,13 @@
 <%
   const formatShortDate = (value = '') => {
     if (!value) return '';
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
     const normalized = value.toString().split('T')[0];
     const [year, month, day] = normalized.split('-');
     if (year && month && day) {

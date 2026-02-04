@@ -6,3 +6,45 @@ table td,
 table th {
   vertical-align: middle;
 }
+
+:root {
+  --vet-radius: 1.25rem;
+  --vet-radius-lg: 1.75rem;
+}
+
+.navbar,
+.card,
+.btn,
+.form-control,
+.form-select,
+.table,
+.dropdown-menu,
+.modal-content,
+.alert {
+  border-radius: var(--vet-radius);
+}
+
+.navbar {
+  border-radius: 0 0 var(--vet-radius-lg) var(--vet-radius-lg);
+}
+
+.card {
+  overflow: hidden;
+}
+
+.vet-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.vet-brand {
+  gap: 0.75rem;
+}
+
+.vet-settings {
+  border-radius: var(--vet-radius-lg);
+}

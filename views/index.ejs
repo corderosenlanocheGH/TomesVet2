@@ -3,10 +3,50 @@
 
 <main class="container py-5">
   <div class="p-4 p-lg-5 bg-white rounded-4 shadow-sm mb-4">
-    <h1 class="display-6 fw-bold">Gestión veterinaria TomesVet</h1>
+    <h1 class="display-6 fw-bold">
+      Gestión veterinaria <span class="vet-name" data-vet-name>TomesVet</span>
+    </h1>
     <p class="text-muted mb-0">
       Administra clientes, mascotas, usuarios e historias clínicas desde un solo lugar.
     </p>
+  </div>
+
+  <div class="card border-0 shadow-sm vet-settings mb-4">
+    <div class="card-body p-4 p-lg-5">
+      <div class="row align-items-center g-4">
+        <div class="col-12 col-lg-6">
+          <h2 class="h5 fw-semibold mb-2">Personaliza la marca</h2>
+          <p class="text-muted mb-0">
+            Actualiza el nombre de la veterinaria y carga un logo para verlo en el panel.
+          </p>
+        </div>
+        <div class="col-12 col-lg-6">
+          <form class="row g-3" id="vetSettingsForm">
+            <div class="col-12">
+              <label class="form-label" for="vetNameInput">Nombre de la veterinaria</label>
+              <input
+                class="form-control"
+                id="vetNameInput"
+                name="vetName"
+                placeholder="Ej: Patitas Felices"
+                type="text"
+              />
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="vetLogoInput">Logo</label>
+              <input class="form-control" id="vetLogoInput" name="vetLogo" type="file" accept="image/*" />
+              <div class="form-text">Se recomienda una imagen cuadrada para un mejor ajuste.</div>
+            </div>
+            <div class="col-12 d-flex flex-wrap gap-2">
+              <button class="btn btn-primary px-4" type="submit">Guardar cambios</button>
+              <button class="btn btn-outline-light text-primary border-primary" type="button" id="vetClearLogo">
+                Quitar logo
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="row g-4">

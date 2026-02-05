@@ -211,7 +211,8 @@ app.get(
        ORDER BY historia_clinica.fecha DESC`
     );
     const [mascotas] = await pool.query('SELECT id, nombre FROM mascotas ORDER BY nombre');
-    res.render('historia', { historias, mascotas });
+    const showForm = Boolean(req.query.nuevo);
+    res.render('historia', { historias, mascotas, showForm });
   })
 );
 

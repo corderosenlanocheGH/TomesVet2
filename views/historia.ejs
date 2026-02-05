@@ -18,45 +18,88 @@
 
 <main class="content-area">
   <div class="row g-4">
-    <div class="col-lg-4">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <h4 class="card-title mb-3">Nueva historia clínica</h4>
-          <form action="/historia-clinica" method="POST" class="d-grid gap-3">
-            <div>
-              <label class="form-label">Mascota</label>
-              <select class="form-select" name="mascota_id" required>
-                <option value="" disabled selected>Selecciona una mascota</option>
-                <% mascotas.forEach((mascota) => { %>
-                  <option value="<%= mascota.id %>"><%= mascota.nombre %></option>
-                <% }) %>
-              </select>
-            </div>
-            <div>
-              <label class="form-label">Fecha</label>
-              <input class="form-control" type="date" name="fecha" required />
-            </div>
-            <div>
-              <label class="form-label">Motivo</label>
-              <input class="form-control" type="text" name="motivo" required />
-            </div>
-            <div>
-              <label class="form-label">Diagnóstico</label>
-              <textarea class="form-control" name="diagnostico" rows="2" required></textarea>
-            </div>
-            <div>
-              <label class="form-label">Tratamiento</label>
-              <textarea class="form-control" name="tratamiento" rows="2" required></textarea>
-            </div>
-            <button class="btn btn-primary" type="submit">Guardar</button>
-          </form>
+    <% if (showForm) { %>
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h4 class="card-title mb-3">Nueva historia clínica</h4>
+            <form action="/historia-clinica" method="POST" class="d-grid gap-3">
+              <div>
+                <label class="form-label">Mascota</label>
+                <select class="form-select" name="mascota_id" required>
+                  <option value="" disabled selected>Selecciona una mascota</option>
+                  <% mascotas.forEach((mascota) => { %>
+                    <option value="<%= mascota.id %>"><%= mascota.nombre %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Fecha</label>
+                <input class="form-control" type="date" name="fecha" required />
+              </div>
+              <div>
+                <label class="form-label">Motivo</label>
+                <input class="form-control" type="text" name="motivo" required />
+              </div>
+              <div>
+                <label class="form-label">Diagnóstico</label>
+                <textarea class="form-control" name="diagnostico" rows="2" required></textarea>
+              </div>
+              <div>
+                <label class="form-label">Tratamiento</label>
+                <textarea class="form-control" name="tratamiento" rows="2" required></textarea>
+              </div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-primary" type="submit">Guardar</button>
+                <a class="btn btn-outline-secondary" href="/historia-clinica">Cancelar</a>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="col-lg-8">
+    <% } %>
+    <div class="<%= showForm ? 'col-lg-8' : 'col-12' %>">
       <div class="card border-0 shadow-sm">
         <div class="card-body">
-          <h4 class="card-title mb-3">Historial clínico</h4>
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <h4 class="card-title mb-0">Historial clínico</h4>
+            <div class="d-flex flex-wrap gap-2 historia-filters">
+              <div class="d-flex align-items-end">
+                <a class="btn btn-primary" href="/historia-clinica?nuevo=1">Nueva historia clínica</a>
+              </div>
+              <div>
+                <label class="form-label mb-1" for="historia-busqueda">Buscar</label>
+                <input
+                  class="form-control"
+                  type="search"
+                  id="historia-busqueda"
+                  placeholder="Mascota, motivo o diagnóstico"
+                />
+              </div>
+              <div>
+                <label class="form-label mb-1" for="historia-mascota">Mascota</label>
+                <select class="form-select" id="historia-mascota">
+                  <option value="">Todas</option>
+                  <% mascotas.forEach((mascota) => { %>
+                    <option value="<%= mascota.id %>"><%= mascota.nombre %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div>
+                <label class="form-label mb-1" for="historia-desde">Desde</label>
+                <input class="form-control" type="date" id="historia-desde" />
+              </div>
+              <div>
+                <label class="form-label mb-1" for="historia-hasta">Hasta</label>
+                <input class="form-control" type="date" id="historia-hasta" />
+              </div>
+              <div class="d-flex align-items-end">
+                <button class="btn btn-outline-secondary" type="button" id="historia-limpiar">
+                  Limpiar
+                </button>
+              </div>
+            </div>
+          </div>
           <div class="table-responsive">
             <table class="table align-middle">
               <thead>
@@ -68,9 +111,12 @@
                   <th>Tratamiento</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="historias-body">
                 <% historias.forEach((historia) => { %>
-                  <tr>
+                  <tr
+                    data-mascota-id="<%= historia.mascota_id %>"
+                    data-fecha="<%= historia.fecha ? historia.fecha.toString().split('T')[0] : '' %>"
+                  >
                     <td><%= historia.mascota_nombre %></td>
                     <td><%= formatShortDate(historia.fecha) %></td>
                     <td><%= historia.motivo %></td>
@@ -86,5 +132,64 @@
     </div>
   </div>
 </main>
+
+<script>
+  const historiaBody = document.getElementById('historias-body');
+  const buscarHistoria = document.getElementById('historia-busqueda');
+  const mascotaFilter = document.getElementById('historia-mascota');
+  const fechaDesde = document.getElementById('historia-desde');
+  const fechaHasta = document.getElementById('historia-hasta');
+  const limpiarHistoria = document.getElementById('historia-limpiar');
+
+  const normalizeText = (value = '') =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+
+  const parseDate = (value) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+    return parsed;
+  };
+
+  const historiaRows = Array.from(historiaBody?.querySelectorAll('tr') || []);
+
+  const applyHistoriaFilters = () => {
+    const query = normalizeText(buscarHistoria.value);
+    const mascotaId = mascotaFilter.value;
+    const desde = parseDate(fechaDesde.value);
+    const hasta = parseDate(fechaHasta.value);
+
+    historiaRows.forEach((row) => {
+      const rowText = normalizeText(row.textContent);
+      const rowMascota = row.dataset.mascotaId || '';
+      const rowDate = parseDate(row.dataset.fecha);
+      const mascotaMatch = !mascotaId || rowMascota === mascotaId;
+      const textMatch = !query || rowText.includes(query);
+      const desdeMatch = !desde || (rowDate && rowDate >= desde);
+      const hastaMatch = !hasta || (rowDate && rowDate <= hasta);
+      row.classList.toggle('is-hidden', !(mascotaMatch && textMatch && desdeMatch && hastaMatch));
+    });
+  };
+
+  const clearHistoriaFilters = () => {
+    buscarHistoria.value = '';
+    mascotaFilter.value = '';
+    fechaDesde.value = '';
+    fechaHasta.value = '';
+    applyHistoriaFilters();
+  };
+
+  buscarHistoria.addEventListener('input', applyHistoriaFilters);
+  mascotaFilter.addEventListener('change', applyHistoriaFilters);
+  fechaDesde.addEventListener('change', applyHistoriaFilters);
+  fechaHasta.addEventListener('change', applyHistoriaFilters);
+  limpiarHistoria.addEventListener('click', clearHistoriaFilters);
+</script>
 
 <%- include('partials/footer') %>

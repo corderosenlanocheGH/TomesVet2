@@ -301,6 +301,15 @@ app.post(
       numero_serie,
     } = req.body;
     await pool.query(
+      `UPDATE vacunas
+       SET proxima_fecha_aplicacion = NULL
+       WHERE mascota_id = ?
+         AND nombre_comercial_id = ?
+         AND tipo_id = ?
+         AND proxima_fecha_aplicacion IS NOT NULL`,
+      [mascota_id, nombre_comercial_id, tipo_id]
+    );
+    await pool.query(
       `INSERT INTO vacunas (
         mascota_id,
         nombre_comercial_id,
@@ -334,6 +343,18 @@ app.post(
       proxima_fecha_aplicacion,
       numero_serie,
     } = req.body;
+    if (proxima_fecha_aplicacion) {
+      await pool.query(
+        `UPDATE vacunas
+         SET proxima_fecha_aplicacion = NULL
+         WHERE mascota_id = ?
+           AND nombre_comercial_id = ?
+           AND tipo_id = ?
+           AND id <> ?
+           AND proxima_fecha_aplicacion IS NOT NULL`,
+        [mascota_id, nombre_comercial_id, tipo_id, req.params.id]
+      );
+    }
     await pool.query(
       `UPDATE vacunas
        SET mascota_id = ?,

@@ -25,6 +25,10 @@
     }
     return value;
   };
+  const selectedMascota =
+    selectedMascotaId && mascotas
+      ? mascotas.find((mascota) => mascota.id === Number(selectedMascotaId))
+      : null;
 %>
 <%- include('partials/nav') %>
 
@@ -50,6 +54,7 @@
                     <option
                       value="<%= mascota.id %>"
                       <%= vacunaEditar && vacunaEditar.mascota_id === mascota.id ? 'selected' : '' %>
+                      <%= !vacunaEditar && selectedMascotaId && Number(selectedMascotaId) === mascota.id ? 'selected' : '' %>
                     >
                       <%= mascota.nombre %> - <%= mascota.cliente_nombre %>
                     </option>
@@ -137,8 +142,21 @@
       <div class="card border-0 shadow-sm">
         <div class="card-body">
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-            <h4 class="card-title mb-0">Vacunas aplicadas</h4>
-            <a class="btn btn-primary" href="/vacunas?nuevo=1">Nueva vacuna</a>
+            <div>
+              <h4 class="card-title mb-1">Vacunas aplicadas</h4>
+              <% if (selectedMascota) { %>
+                <p class="text-muted mb-0">
+                  Mostrando vacunas de <strong><%= selectedMascota.nombre %></strong>.
+                  <a class="link-primary" href="/vacunas">Ver todas</a>
+                </p>
+              <% } %>
+            </div>
+            <a
+              class="btn btn-primary"
+              href="/vacunas?nuevo=1<%= selectedMascotaId ? `&mascota_id=${selectedMascotaId}` : '' %>"
+            >
+              Nueva vacuna
+            </a>
           </div>
           <div class="table-responsive">
             <table class="table align-middle">

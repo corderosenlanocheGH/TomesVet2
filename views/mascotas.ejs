@@ -133,9 +133,20 @@
                     <td><%= formatShortDate(mascota.fecha_nacimiento) || '-' %></td>
                     <td><%= mascota.cliente_nombre %></td>
                     <td class="text-end">
-                      <a class="btn btn-sm btn-outline-primary" href="/mascotas?editar=<%= mascota.id %>">
-                        Editar
-                      </a>
+                      <div class="btn-group btn-group-sm" role="group">
+                        <a class="btn btn-outline-primary" href="/mascotas?editar=<%= mascota.id %>">
+                          Editar
+                        </a>
+                        <a class="btn btn-outline-secondary" href="/vacunas?mascota_id=<%= mascota.id %>">
+                          Vacunas
+                        </a>
+                        <a
+                          class="btn btn-outline-secondary"
+                          href="/historia-clinica?mascota_id=<%= mascota.id %>"
+                        >
+                          Historia clínica
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 <% }) %>

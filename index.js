@@ -204,15 +204,24 @@ app.post(
 app.get(
   '/historia-clinica',
   asyncHandler(async (req, res) => {
-    const [historias] = await pool.query(
+    const selectedMascotaId = req.query.mascota_id ? String(req.query.mascota_id) : '';
+    let historiaQuery =
       `SELECT historia_clinica.*, mascotas.nombre AS mascota_nombre
        FROM historia_clinica
-       JOIN mascotas ON mascotas.id = historia_clinica.mascota_id
-       ORDER BY historia_clinica.fecha DESC`
+       JOIN mascotas ON mascotas.id = historia_clinica.mascota_id`;
+    const historiaParams = [];
+    if (selectedMascotaId) {
+      historiaQuery += ' WHERE historia_clinica.mascota_id = ?';
+      historiaParams.push(selectedMascotaId);
+    }
+    historiaQuery += ' ORDER BY historia_clinica.fecha DESC';
+    const [historias] = await pool.query(
+      historiaQuery,
+      historiaParams
     );
     const [mascotas] = await pool.query('SELECT id, nombre FROM mascotas ORDER BY nombre');
     const showForm = Boolean(req.query.nuevo);
-    res.render('historia', { historias, mascotas, showForm });
+    res.render('historia', { historias, mascotas, showForm, selectedMascotaId });
   })
 );
 
@@ -232,7 +241,8 @@ app.post(
 app.get(
   '/vacunas',
   asyncHandler(async (req, res) => {
-    const [vacunas] = await pool.query(
+    const selectedMascotaId = req.query.mascota_id ? String(req.query.mascota_id) : '';
+    let vacunasQuery =
       `SELECT vacunas.*,
               vacunas_nombres_comerciales.nombre AS nombre_comercial,
               vacunas_tipos.nombre AS tipo,
@@ -243,8 +253,16 @@ app.get(
          ON vacunas_nombres_comerciales.id = vacunas.nombre_comercial_id
        JOIN vacunas_tipos ON vacunas_tipos.id = vacunas.tipo_id
        JOIN mascotas ON mascotas.id = vacunas.mascota_id
-       JOIN clientes ON clientes.id = mascotas.cliente_id
-       ORDER BY vacunas.fecha_aplicacion DESC`
+       JOIN clientes ON clientes.id = mascotas.cliente_id`;
+    const vacunasParams = [];
+    if (selectedMascotaId) {
+      vacunasQuery += ' WHERE vacunas.mascota_id = ?';
+      vacunasParams.push(selectedMascotaId);
+    }
+    vacunasQuery += ' ORDER BY vacunas.fecha_aplicacion DESC';
+    const [vacunas] = await pool.query(
+      vacunasQuery,
+      vacunasParams
     );
     const [mascotas] = await pool.query(
       `SELECT mascotas.id,
@@ -285,6 +303,7 @@ app.get(
       nombresComerciales,
       tiposVacuna,
       showForm,
+      selectedMascotaId,
     });
   })
 );

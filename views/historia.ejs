@@ -29,7 +29,12 @@
                 <select class="form-select" name="mascota_id" required>
                   <option value="" disabled selected>Selecciona una mascota</option>
                   <% mascotas.forEach((mascota) => { %>
-                    <option value="<%= mascota.id %>"><%= mascota.nombre %></option>
+                    <option
+                      value="<%= mascota.id %>"
+                      <%= selectedMascotaId && Number(selectedMascotaId) === mascota.id ? 'selected' : '' %>
+                    >
+                      <%= mascota.nombre %>
+                    </option>
                   <% }) %>
                 </select>
               </div>
@@ -81,7 +86,12 @@
                 <select class="form-select" id="historia-mascota">
                   <option value="">Todas</option>
                   <% mascotas.forEach((mascota) => { %>
-                    <option value="<%= mascota.id %>"><%= mascota.nombre %></option>
+                    <option
+                      value="<%= mascota.id %>"
+                      <%= selectedMascotaId && Number(selectedMascotaId) === mascota.id ? 'selected' : '' %>
+                    >
+                      <%= mascota.nombre %>
+                    </option>
                   <% }) %>
                 </select>
               </div>
@@ -190,6 +200,7 @@
   fechaDesde.addEventListener('change', applyHistoriaFilters);
   fechaHasta.addEventListener('change', applyHistoriaFilters);
   limpiarHistoria.addEventListener('click', clearHistoriaFilters);
+  applyHistoriaFilters();
 </script>
 
 <%- include('partials/footer') %>

@@ -302,12 +302,12 @@ body {
 }
 
 .content-area .table tbody tr {
-  background: #fff;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
 }
 
 .content-area .table tbody td {
   padding: 0.85rem 1rem;
+  background: #fff;
 }
 
 .content-area .table tbody tr td:first-child {
@@ -329,16 +329,16 @@ body {
   min-width: 190px;
 }
 
-.content-area .table tbody tr[data-status-slug="pendiente"] {
+.content-area .table tbody tr[data-status-slug="pendiente"] td {
   background: #fef3c7;
 }
 
-.content-area .table tbody tr[data-status-slug="terminado"] {
+.content-area .table tbody tr[data-status-slug="terminado"] td {
   background: #dcfce7;
 }
 
-.content-area .table tbody tr[data-status-slug="cancelado"],
-.content-area .table tbody tr[data-status-slug="cancelada"] {
+.content-area .table tbody tr[data-status-slug="cancelado"] td,
+.content-area .table tbody tr[data-status-slug="cancelada"] td {
   background: #e2e8f0;
 }
 

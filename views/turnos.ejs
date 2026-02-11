@@ -1,6 +1,14 @@
 <%- include('partials/head', { title: 'Turnos | TomesVet' }) %>
 <% const estadosTurno = ['Pendiente', 'Terminado', 'Cancelado']; %>
 <%
+  const getStatusSlug = (value = '') =>
+    value
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .replace(/\s+/g, '-');
   const formatShortDate = (value = '') => {
     if (!value) return '';
     const date = new Date(value);
@@ -125,7 +133,7 @@
               </thead>
               <tbody id="turnos-body">
                 <% turnos.forEach((turno) => { %>
-                  <tr data-estado="<%= turno.estado %>">
+                  <tr data-estado="<%= turno.estado %>" data-status-slug="<%= getStatusSlug(turno.estado) %>">
                     <td><%= turno.cliente_nombre %></td>
                     <td><%= turno.mascota_nombre %></td>
                     <td><%= formatShortDate(turno.fecha) %></td>
@@ -137,7 +145,6 @@
                         method="POST"
                         class="d-flex flex-column gap-2 turno-estado-form"
                       >
-                        <span class="status-pill" data-status="<%= turno.estado %>"><%= turno.estado %></span>
                         <div class="d-flex flex-wrap gap-3">
                           <% estadosTurno.forEach((estado) => { %>
                             <div class="form-check">
@@ -211,12 +218,6 @@
       .trim();
 
   const estadosTurno = <%- JSON.stringify(estadosTurno) %>;
-  const statusPills = Array.from(document.querySelectorAll('.status-pill'));
-  statusPills.forEach((pill) => {
-    const slug = normalizeText(pill.dataset.status).replace(/\s+/g, '-');
-    pill.dataset.statusSlug = slug;
-  });
-
   const turnosRows = Array.from(turnosBody?.querySelectorAll('tr') || []);
   const estadoForms = Array.from(document.querySelectorAll('.turno-estado-form'));
   estadoForms.forEach((form) => {

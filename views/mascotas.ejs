@@ -112,6 +112,36 @@
             <h4 class="card-title mb-0">Mascotas registradas</h4>
             <a class="btn btn-primary" href="/mascotas?nuevo=1">Nueva mascota</a>
           </div>
+          <div class="row g-3 turnos-filters mb-3">
+            <div class="col-md-4">
+              <label class="filters-label" for="mascotas-busqueda">Buscar</label>
+              <input
+                class="form-control"
+                id="mascotas-busqueda"
+                type="search"
+                placeholder="Mascota, especie o raza"
+              />
+            </div>
+            <div class="col-md-4">
+              <label class="filters-label" for="mascotas-cliente">Cliente</label>
+              <select class="form-select" id="mascotas-cliente">
+                <option value="">Todos</option>
+                <% clientes.forEach((cliente) => { %>
+                  <option
+                    value="<%= cliente.id %>"
+                    <%= selectedClienteId === String(cliente.id) ? 'selected' : '' %>
+                  >
+                    <%= cliente.nombre %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-outline-secondary w-100" type="button" id="mascotas-limpiar">
+                Limpiar
+              </button>
+            </div>
+          </div>
           <div class="table-responsive">
             <table class="table align-middle">
               <thead>
@@ -124,14 +154,18 @@
                   <th></th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="mascotas-body">
                 <% mascotas.forEach((mascota) => { %>
-                  <tr>
+                  <tr data-cliente-id="<%= mascota.cliente_id %>">
                     <td><%= mascota.nombre %></td>
                     <td><%= mascota.especie %></td>
                     <td><%= mascota.raza || '-' %></td>
                     <td><%= formatShortDate(mascota.fecha_nacimiento) || '-' %></td>
-                    <td><%= mascota.cliente_nombre %></td>
+                    <td>
+                      <a class="link-secondary text-decoration-none" href="/clientes?mascota_id=<%= mascota.id %>">
+                        <%= mascota.cliente_nombre %>
+                      </a>
+                    </td>
                     <td class="text-end">
                       <div class="btn-group btn-group-sm" role="group">
                         <a class="btn btn-outline-primary" href="/mascotas?editar=<%= mascota.id %>">
@@ -158,5 +192,45 @@
     </div>
   </div>
 </main>
+
+<script>
+  const normalizeText = (value = '') =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+
+  const mascotasBody = document.getElementById('mascotas-body');
+  const mascotasRows = Array.from(mascotasBody?.querySelectorAll('tr') || []);
+  const mascotasBusqueda = document.getElementById('mascotas-busqueda');
+  const mascotasCliente = document.getElementById('mascotas-cliente');
+  const mascotasLimpiar = document.getElementById('mascotas-limpiar');
+
+  const applyMascotasFilter = () => {
+    const query = normalizeText(mascotasBusqueda.value);
+    const clienteId = mascotasCliente.value;
+
+    mascotasRows.forEach((row) => {
+      const rowText = normalizeText(row.textContent);
+      const rowClienteId = row.dataset.clienteId || '';
+      const textMatch = !query || rowText.includes(query);
+      const clienteMatch = !clienteId || rowClienteId === clienteId;
+      row.classList.toggle('is-hidden', !(textMatch && clienteMatch));
+    });
+  };
+
+  const clearMascotasFilter = () => {
+    mascotasBusqueda.value = '';
+    mascotasCliente.value = '';
+    applyMascotasFilter();
+  };
+
+  mascotasBusqueda.addEventListener('input', applyMascotasFilter);
+  mascotasCliente.addEventListener('change', applyMascotasFilter);
+  mascotasLimpiar.addEventListener('click', clearMascotasFilter);
+
+  applyMascotasFilter();
+</script>
 
 <%- include('partials/footer') %>

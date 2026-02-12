@@ -69,6 +69,16 @@ app.get(
   '/clientes',
   asyncHandler(async (req, res) => {
     const [clientes] = await pool.query('SELECT * FROM clientes ORDER BY id DESC');
+    const [mascotas] = await pool.query(
+      `SELECT mascotas.id,
+              mascotas.nombre,
+              mascotas.cliente_id,
+              clientes.nombre AS cliente_nombre
+       FROM mascotas
+       JOIN clientes ON clientes.id = mascotas.cliente_id
+       ORDER BY mascotas.nombre`
+    );
+    const selectedMascotaId = req.query.mascota_id ? String(req.query.mascota_id) : '';
     let clienteEditar = null;
     const showForm = Boolean(req.query.editar || req.query.nuevo);
     if (req.query.editar) {
@@ -77,7 +87,13 @@ app.get(
       ]);
       [clienteEditar] = rows;
     }
-    res.render('clientes', { clientes, clienteEditar, showForm });
+    res.render('clientes', {
+      clientes,
+      mascotas,
+      selectedMascotaId,
+      clienteEditar,
+      showForm,
+    });
   })
 );
 
@@ -115,6 +131,7 @@ app.get(
        ORDER BY mascotas.id DESC`
     );
     const [clientes] = await pool.query('SELECT id, nombre FROM clientes ORDER BY nombre');
+    const selectedClienteId = req.query.cliente_id ? String(req.query.cliente_id) : '';
     let mascotaEditar = null;
     const showForm = Boolean(req.query.editar || req.query.nuevo);
     if (req.query.editar) {
@@ -128,7 +145,13 @@ app.get(
         };
       }
     }
-    res.render('mascotas', { mascotas, clientes, mascotaEditar, showForm });
+    res.render('mascotas', {
+      mascotas,
+      clientes,
+      selectedClienteId,
+      mascotaEditar,
+      showForm,
+    });
   })
 );
 

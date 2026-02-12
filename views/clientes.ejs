@@ -71,6 +71,36 @@
             <h4 class="card-title mb-0">Clientes</h4>
             <a class="btn btn-primary" href="/clientes?nuevo=1">Nuevo cliente</a>
           </div>
+          <div class="row g-3 turnos-filters mb-3">
+            <div class="col-md-4">
+              <label class="filters-label" for="clientes-busqueda">Buscar</label>
+              <input
+                class="form-control"
+                id="clientes-busqueda"
+                type="search"
+                placeholder="Cliente, teléfono o email"
+              />
+            </div>
+            <div class="col-md-4">
+              <label class="filters-label" for="clientes-mascota">Mascota</label>
+              <select class="form-select" id="clientes-mascota">
+                <option value="">Todas</option>
+                <% mascotas.forEach((mascota) => { %>
+                  <option
+                    value="<%= mascota.id %>"
+                    <%= selectedMascotaId === String(mascota.id) ? 'selected' : '' %>
+                  >
+                    <%= mascota.nombre %> · <%= mascota.cliente_nombre %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-outline-secondary w-100" type="button" id="clientes-limpiar">
+                Limpiar
+              </button>
+            </div>
+          </div>
           <div class="table-responsive">
             <table class="table align-middle">
               <thead>
@@ -82,17 +112,22 @@
                   <th></th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="clientes-body">
                 <% clientes.forEach((cliente) => { %>
-                  <tr>
+                  <tr data-cliente-id="<%= cliente.id %>">
                     <td><%= cliente.nombre %></td>
                     <td><%= cliente.telefono %></td>
                     <td><%= cliente.email || '-' %></td>
                     <td><%= cliente.direccion || '-' %></td>
                     <td class="text-end">
-                      <a class="btn btn-sm btn-outline-primary" href="/clientes?editar=<%= cliente.id %>">
-                        Editar
-                      </a>
+                      <div class="btn-group btn-group-sm" role="group">
+                        <a class="btn btn-outline-primary" href="/clientes?editar=<%= cliente.id %>">
+                          Editar
+                        </a>
+                        <a class="btn btn-outline-secondary" href="/mascotas?cliente_id=<%= cliente.id %>">
+                          Ver mascotas
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 <% }) %>
@@ -104,5 +139,55 @@
     </div>
   </div>
 </main>
+
+<script>
+  const normalizeText = (value = '') =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+
+  const clientesBody = document.getElementById('clientes-body');
+  const clientesRows = Array.from(clientesBody?.querySelectorAll('tr') || []);
+  const clientesBusqueda = document.getElementById('clientes-busqueda');
+  const clientesMascota = document.getElementById('clientes-mascota');
+  const clientesLimpiar = document.getElementById('clientes-limpiar');
+  const mascotasClienteMap = <%- JSON.stringify(
+    mascotas.reduce((acc, mascota) => {
+      const clienteId = String(mascota.cliente_id);
+      if (!acc[clienteId]) {
+        acc[clienteId] = [];
+      }
+      acc[clienteId].push(String(mascota.id));
+      return acc;
+    }, {})
+  ) %>;
+
+  const applyClientesFilter = () => {
+    const query = normalizeText(clientesBusqueda.value);
+    const mascotaId = clientesMascota.value;
+
+    clientesRows.forEach((row) => {
+      const clienteId = row.dataset.clienteId || '';
+      const rowText = normalizeText(row.textContent);
+      const textMatch = !query || rowText.includes(query);
+      const mascotaMatch = !mascotaId || (mascotasClienteMap[clienteId] || []).includes(mascotaId);
+      row.classList.toggle('is-hidden', !(textMatch && mascotaMatch));
+    });
+  };
+
+  const clearClientesFilter = () => {
+    clientesBusqueda.value = '';
+    clientesMascota.value = '';
+    applyClientesFilter();
+  };
+
+  clientesBusqueda.addEventListener('input', applyClientesFilter);
+  clientesMascota.addEventListener('change', applyClientesFilter);
+  clientesLimpiar.addEventListener('click', clearClientesFilter);
+
+  applyClientesFilter();
+</script>
 
 <%- include('partials/footer') %>

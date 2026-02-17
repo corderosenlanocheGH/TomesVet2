@@ -24,60 +24,66 @@
           <div class="card-body">
             <h4 class="card-title mb-3">Nueva Ficha medica</h4>
             <form action="/historia-clinica" method="POST" class="d-grid gap-3">
-              <div>
-                <label class="form-label">Mascota</label>
-                <select class="form-select" name="mascota_id" required>
-                  <option value="" disabled selected>Selecciona una mascota</option>
-                  <% mascotas.forEach((mascota) => { %>
-                    <option
-                      value="<%= mascota.id %>"
-                      <%= selectedMascotaId && Number(selectedMascotaId) === mascota.id ? 'selected' : '' %>
-                    >
-                      <%= mascota.nombre %>
-                    </option>
-                  <% }) %>
-                </select>
-              </div>
-              <div>
-                <label class="form-label">Fecha</label>
-                <input class="form-control" type="date" name="fecha" required />
-              </div>
-              <div>
-                <label class="form-label">Motivo</label>
-                <input class="form-control" type="text" name="motivo" required />
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">Mascota</label>
+                  <select class="form-select" name="mascota_id" required>
+                    <option value="" disabled selected>Selecciona una mascota</option>
+                    <% mascotas.forEach((mascota) => { %>
+                      <option
+                        value="<%= mascota.id %>"
+                        <%= selectedMascotaId && Number(selectedMascotaId) === mascota.id ? 'selected' : '' %>
+                      >
+                        <%= mascota.nombre %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Fecha</label>
+                  <input class="form-control" type="date" name="fecha" required />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Motivo</label>
+                  <input class="form-control" type="text" name="motivo" required />
+                </div>
               </div>
               <div>
                 <label class="form-label">Aspecto general</label>
                 <textarea class="form-control" name="aspecto_general" rows="2"></textarea>
               </div>
-              <div>
-                <label class="form-label">Estado de nutrición</label>
-                <select class="form-select" name="estado_nutricion">
-                  <option value="">Seleccionar</option>
-                  <option value="Normal">Normal</option>
-                  <option value="Desnutrido">Desnutrido</option>
-                  <option value="Delgado">Delgado</option>
-                </select>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Estado de nutrición</label>
+                  <select class="form-select" name="estado_nutricion">
+                    <option value="">Seleccionar</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Desnutrido">Desnutrido</option>
+                    <option value="Delgado">Delgado</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Última desparacitación</label>
+                  <input class="form-control" type="date" name="ultima_desparacitacion" />
+                </div>
               </div>
-              <div>
-                <label class="form-label">Última desparacitación</label>
-                <input class="form-control" type="date" name="ultima_desparacitacion" />
-              </div>
-              <div>
-                <label class="form-label">Frecuencia Cardíaca</label>
-                <input class="form-control" type="text" name="frecuencia_cardiaca" />
-              </div>
-              <div>
-                <label class="form-label">Frecuencia Respiratoria</label>
-                <input class="form-control" type="text" name="frecuencia_respiratoria" />
-              </div>
-              <div>
-                <label class="form-label">Hidratación</label>
-                <input class="form-control" type="text" name="hidratacion" />
-              </div>
-              <div>
-                <label class="form-label">Temperatura</label>
-                <input class="form-control" type="text" name="temperatura" />
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label">Frecuencia Cardíaca</label>
+                  <input class="form-control" type="text" name="frecuencia_cardiaca" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Frecuencia Respiratoria</label>
+                  <input class="form-control" type="text" name="frecuencia_respiratoria" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Hidratación</label>
+                  <input class="form-control" type="text" name="hidratacion" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Temperatura</label>
+                  <input class="form-control" type="text" name="temperatura" />
+                </div>
               </div>
               <div>
                 <label class="form-label">Estado de Mucosa</label>

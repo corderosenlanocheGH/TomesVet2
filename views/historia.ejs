@@ -19,10 +19,10 @@
 <main class="content-area">
   <div class="row g-4">
     <% if (showForm) { %>
-      <div class="col-lg-4">
+      <div class="col-12">
         <div class="card border-0 shadow-sm">
           <div class="card-body">
-            <h4 class="card-title mb-3">Ficha medica</h4>
+            <h4 class="card-title mb-3">Nueva Ficha medica</h4>
             <form action="/historia-clinica" method="POST" class="d-grid gap-3">
               <div>
                 <label class="form-label">Mascota</label>
@@ -154,15 +154,15 @@
           </div>
         </div>
       </div>
-    <% } %>
-    <div class="<%= showForm ? 'col-lg-8' : 'col-12' %>">
+    <% } else { %>
+    <div class="col-12">
       <div class="card border-0 shadow-sm">
         <div class="card-body">
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
             <h4 class="card-title mb-0">Historial clínico</h4>
             <div class="d-flex flex-wrap gap-2 historia-filters">
               <div class="d-flex align-items-end">
-                <a class="btn btn-primary" href="/historia-clinica?nuevo=1">Ficha medica</a>
+                <a class="btn btn-primary" href="/historia-clinica?nuevo=1">Nueva Ficha medica</a>
               </div>
               <div>
                 <label class="form-label mb-1" for="historia-busqueda">Buscar</label>
@@ -258,6 +258,7 @@
         </div>
       </div>
     </div>
+    <% } %>
   </div>
 </main>
 
@@ -313,12 +314,14 @@
     applyHistoriaFilters();
   };
 
-  buscarHistoria.addEventListener('input', applyHistoriaFilters);
-  mascotaFilter.addEventListener('change', applyHistoriaFilters);
-  fechaDesde.addEventListener('change', applyHistoriaFilters);
-  fechaHasta.addEventListener('change', applyHistoriaFilters);
-  limpiarHistoria.addEventListener('click', clearHistoriaFilters);
-  applyHistoriaFilters();
+  if (historiaBody && buscarHistoria && mascotaFilter && fechaDesde && fechaHasta && limpiarHistoria) {
+    buscarHistoria.addEventListener('input', applyHistoriaFilters);
+    mascotaFilter.addEventListener('change', applyHistoriaFilters);
+    fechaDesde.addEventListener('change', applyHistoriaFilters);
+    fechaHasta.addEventListener('change', applyHistoriaFilters);
+    limpiarHistoria.addEventListener('click', clearHistoriaFilters);
+    applyHistoriaFilters();
+  }
 </script>
 
 <%- include('partials/footer') %>

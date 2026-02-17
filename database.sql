@@ -31,8 +31,22 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   mascota_id INT NOT NULL,
   fecha DATE NOT NULL,
   motivo VARCHAR(180) NOT NULL,
-  diagnostico TEXT NOT NULL,
-  tratamiento TEXT NOT NULL,
+  aspecto_general TEXT,
+  estado_nutricion VARCHAR(30),
+  ultima_desparacitacion DATE,
+  frecuencia_cardiaca VARCHAR(120),
+  frecuencia_respiratoria VARCHAR(120),
+  hidratacion VARCHAR(120),
+  temperatura VARCHAR(120),
+  mucosa_palpebral VARCHAR(20),
+  mucosa_escleral VARCHAR(20),
+  mucosa_bucal VARCHAR(20),
+  mucosa_vulpen VARCHAR(20),
+  diagnostico_presuntivo TEXT,
+  diagnostico_diferencial TEXT,
+  diagnostico_definitivo TEXT,
+  analisis_solicitados TEXT,
+  tratamiento TEXT,
   CONSTRAINT fk_historia_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
 );
 
@@ -94,10 +108,70 @@ VALUES
   ('Dra. Isabel Torres', 'Veterinario', 'isabel@example.com'),
   ('Juan Pérez', 'Asistente', 'juan@example.com');
 
-INSERT INTO historia_clinica (mascota_id, fecha, motivo, diagnostico, tratamiento)
+INSERT INTO historia_clinica (
+  mascota_id,
+  fecha,
+  motivo,
+  aspecto_general,
+  estado_nutricion,
+  ultima_desparacitacion,
+  frecuencia_cardiaca,
+  frecuencia_respiratoria,
+  hidratacion,
+  temperatura,
+  mucosa_palpebral,
+  mucosa_escleral,
+  mucosa_bucal,
+  mucosa_vulpen,
+  diagnostico_presuntivo,
+  diagnostico_diferencial,
+  diagnostico_definitivo,
+  analisis_solicitados,
+  tratamiento
+)
 VALUES
-  (1, '2024-09-15', 'Vacunación anual', 'Se aplica vacuna múltiple', 'Reposo 24 horas'),
-  (2, '2024-09-18', 'Control general', 'Buen estado general', 'Continuar dieta balanceada');
+  (
+    1,
+    '2024-09-15',
+    'Vacunación anual',
+    'Activo y alerta',
+    'Normal',
+    '2024-08-01',
+    '90 lpm',
+    '24 rpm',
+    'Adecuada',
+    '38.4°C',
+    'Bien',
+    'Bien',
+    'Bien',
+    'Bien',
+    'Plan sanitario anual',
+    'Control parasitario pendiente',
+    'Paciente estable',
+    'No requiere',
+    'Reposo 24 horas'
+  ),
+  (
+    2,
+    '2024-09-18',
+    'Control general',
+    'Tranquilo y reactivo',
+    'Delgado',
+    '2024-07-20',
+    '110 lpm',
+    '28 rpm',
+    'Leve deshidratación',
+    '38.9°C',
+    'Bien',
+    'Mal',
+    'Bien',
+    'Bien',
+    'Gastritis',
+    'Intolerancia alimentaria',
+    'Gastritis leve',
+    'Hemograma',
+    'Continuar dieta balanceada'
+  );
 
 INSERT INTO vacunas_tipos (nombre)
 VALUES

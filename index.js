@@ -251,11 +251,70 @@ app.get(
 app.post(
   '/historia-clinica',
   asyncHandler(async (req, res) => {
-    const { mascota_id, fecha, motivo, diagnostico, tratamiento } = req.body;
+    const {
+      mascota_id,
+      fecha,
+      motivo,
+      aspecto_general,
+      estado_nutricion,
+      ultima_desparacitacion,
+      frecuencia_cardiaca,
+      frecuencia_respiratoria,
+      hidratacion,
+      temperatura,
+      mucosa_palpebral,
+      mucosa_escleral,
+      mucosa_bucal,
+      mucosa_vulpen,
+      diagnostico_presuntivo,
+      diagnostico_diferencial,
+      diagnostico_definitivo,
+      analisis_solicitados,
+      tratamiento,
+    } = req.body;
     await pool.query(
-      `INSERT INTO historia_clinica (mascota_id, fecha, motivo, diagnostico, tratamiento)
-       VALUES (?, ?, ?, ?, ?)`,
-      [mascota_id, fecha, motivo, diagnostico, tratamiento]
+      `INSERT INTO historia_clinica (
+        mascota_id,
+        fecha,
+        motivo,
+        aspecto_general,
+        estado_nutricion,
+        ultima_desparacitacion,
+        frecuencia_cardiaca,
+        frecuencia_respiratoria,
+        hidratacion,
+        temperatura,
+        mucosa_palpebral,
+        mucosa_escleral,
+        mucosa_bucal,
+        mucosa_vulpen,
+        diagnostico_presuntivo,
+        diagnostico_diferencial,
+        diagnostico_definitivo,
+        analisis_solicitados,
+        tratamiento
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        mascota_id,
+        fecha,
+        motivo,
+        aspecto_general || null,
+        estado_nutricion || null,
+        ultima_desparacitacion || null,
+        frecuencia_cardiaca || null,
+        frecuencia_respiratoria || null,
+        hidratacion || null,
+        temperatura || null,
+        mucosa_palpebral || null,
+        mucosa_escleral || null,
+        mucosa_bucal || null,
+        mucosa_vulpen || null,
+        diagnostico_presuntivo || null,
+        diagnostico_diferencial || null,
+        diagnostico_definitivo || null,
+        analisis_solicitados || null,
+        tratamiento || null,
+      ]
     );
     res.redirect('/historia-clinica');
   })

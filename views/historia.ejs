@@ -47,12 +47,104 @@
                 <input class="form-control" type="text" name="motivo" required />
               </div>
               <div>
-                <label class="form-label">Diagnóstico</label>
-                <textarea class="form-control" name="diagnostico" rows="2" required></textarea>
+                <label class="form-label">Aspecto general</label>
+                <textarea class="form-control" name="aspecto_general" rows="2"></textarea>
               </div>
               <div>
-                <label class="form-label">Tratamiento</label>
-                <textarea class="form-control" name="tratamiento" rows="2" required></textarea>
+                <label class="form-label">Estado de nutrición</label>
+                <select class="form-select" name="estado_nutricion">
+                  <option value="">Seleccionar</option>
+                  <option value="Normal">Normal</option>
+                  <option value="Desnutrido">Desnutrido</option>
+                  <option value="Delgado">Delgado</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Última desparacitación</label>
+                <input class="form-control" type="date" name="ultima_desparacitacion" />
+              </div>
+              <div>
+                <label class="form-label">Frecuencia Cardíaca</label>
+                <input class="form-control" type="text" name="frecuencia_cardiaca" />
+              </div>
+              <div>
+                <label class="form-label">Frecuencia Respiratoria</label>
+                <input class="form-control" type="text" name="frecuencia_respiratoria" />
+              </div>
+              <div>
+                <label class="form-label">Hidratación</label>
+                <input class="form-control" type="text" name="hidratacion" />
+              </div>
+              <div>
+                <label class="form-label">Temperatura</label>
+                <input class="form-control" type="text" name="temperatura" />
+              </div>
+              <div>
+                <label class="form-label">Estado de Mucosa</label>
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Palpebral</th>
+                        <th>Escleral</th>
+                        <th>Bucal</th>
+                        <th>Vul/Pen</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <select class="form-select form-select-sm" name="mucosa_palpebral">
+                            <option value="">-</option>
+                            <option value="Bien">Bien</option>
+                            <option value="Mal">Mal</option>
+                          </select>
+                        </td>
+                        <td>
+                          <select class="form-select form-select-sm" name="mucosa_escleral">
+                            <option value="">-</option>
+                            <option value="Bien">Bien</option>
+                            <option value="Mal">Mal</option>
+                          </select>
+                        </td>
+                        <td>
+                          <select class="form-select form-select-sm" name="mucosa_bucal">
+                            <option value="">-</option>
+                            <option value="Bien">Bien</option>
+                            <option value="Mal">Mal</option>
+                          </select>
+                        </td>
+                        <td>
+                          <select class="form-select form-select-sm" name="mucosa_vulpen">
+                            <option value="">-</option>
+                            <option value="Bien">Bien</option>
+                            <option value="Mal">Mal</option>
+                          </select>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div>
+                <label class="form-label">Diagnóstico presuntivo</label>
+                <textarea class="form-control" name="diagnostico_presuntivo" rows="2"></textarea>
+              </div>
+              <div>
+                <label class="form-label">Diagnóstico diferencial</label>
+                <textarea class="form-control" name="diagnostico_diferencial" rows="2"></textarea>
+              </div>
+              <div>
+                <label class="form-label">Diagnóstico definitivo</label>
+                <textarea class="form-control" name="diagnostico_definitivo" rows="2"></textarea>
+              </div>
+              <div>
+                <label class="form-label">Análisis solicitados</label>
+                <textarea class="form-control" name="analisis_solicitados" rows="2"></textarea>
+              </div>
+              <div>
+                <label class="form-label">Tratamiento y medicación</label>
+                <textarea class="form-control" name="tratamiento" rows="2"></textarea>
               </div>
               <div class="d-flex gap-2">
                 <button class="btn btn-primary" type="submit">Guardar</button>
@@ -117,8 +209,14 @@
                   <th>Mascota</th>
                   <th>Fecha</th>
                   <th>Motivo</th>
+                  <th>Aspecto general</th>
+                  <th>Estado nutrición</th>
+                  <th>Últ. desparacitación</th>
+                  <th>Parámetros</th>
+                  <th>Estado de mucosa</th>
                   <th>Diagnóstico</th>
-                  <th>Tratamiento</th>
+                  <th>Análisis solicitados</th>
+                  <th>Tratamiento y medicación</th>
                 </tr>
               </thead>
               <tbody id="historias-body">
@@ -130,8 +228,28 @@
                     <td><%= historia.mascota_nombre %></td>
                     <td><%= formatShortDate(historia.fecha) %></td>
                     <td><%= historia.motivo %></td>
-                    <td><%= historia.diagnostico %></td>
-                    <td><%= historia.tratamiento %></td>
+                    <td><%= historia.aspecto_general || '-' %></td>
+                    <td><%= historia.estado_nutricion || '-' %></td>
+                    <td><%= formatShortDate(historia.ultima_desparacitacion) || '-' %></td>
+                    <td>
+                      FC: <%= historia.frecuencia_cardiaca || '-' %><br />
+                      FR: <%= historia.frecuencia_respiratoria || '-' %><br />
+                      Hidr.: <%= historia.hidratacion || '-' %><br />
+                      Temp.: <%= historia.temperatura || '-' %>
+                    </td>
+                    <td>
+                      Palp: <%= historia.mucosa_palpebral || '-' %><br />
+                      Escl: <%= historia.mucosa_escleral || '-' %><br />
+                      Buc: <%= historia.mucosa_bucal || '-' %><br />
+                      Vul/Pen: <%= historia.mucosa_vulpen || '-' %>
+                    </td>
+                    <td>
+                      Pres: <%= historia.diagnostico_presuntivo || '-' %><br />
+                      Dif: <%= historia.diagnostico_diferencial || '-' %><br />
+                      Def: <%= historia.diagnostico_definitivo || '-' %>
+                    </td>
+                    <td><%= historia.analisis_solicitados || '-' %></td>
+                    <td><%= historia.tratamiento || '-' %></td>
                   </tr>
                 <% }) %>
               </tbody>

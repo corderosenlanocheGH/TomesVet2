@@ -1,0 +1,72 @@
+<%- include('partials/head', { title: 'Detalle historia clínica | TomesVet' }) %>
+<%
+  const formatShortDate = (value = '') => {
+    if (!value) return '-';
+    const normalized = value.toString().split('T')[0];
+    const [year, month, day] = normalized.split('-');
+    if (year && month && day) {
+      return `${day}/${month}/${year}`;
+    }
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString('es-AR');
+    }
+    return value;
+  };
+
+  const showValue = (value) => value || '-';
+%>
+<%- include('partials/nav') %>
+
+<main class="content-area">
+  <div class="row g-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+            <h4 class="card-title mb-0">Detalle de historia clínica</h4>
+            <a class="btn btn-outline-secondary" href="/historia-clinica">Volver al listado</a>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle mb-0">
+              <tbody>
+                <tr><th style="width: 30%">Mascota</th><td><%= historia.mascota_nombre %></td></tr>
+                <tr><th>Fecha</th><td><%= formatShortDate(historia.fecha) %></td></tr>
+                <tr><th>Motivo</th><td><%= showValue(historia.motivo) %></td></tr>
+                <tr><th>Aspecto general</th><td><%= showValue(historia.aspecto_general) %></td></tr>
+                <tr><th>Estado de nutrición</th><td><%= showValue(historia.estado_nutricion) %></td></tr>
+                <tr><th>Última desparacitación</th><td><%= formatShortDate(historia.ultima_desparacitacion) %></td></tr>
+                <tr>
+                  <th>Parámetros</th>
+                  <td>
+                    FC: <%= showValue(historia.frecuencia_cardiaca) %><br />
+                    FR: <%= showValue(historia.frecuencia_respiratoria) %><br />
+                    Hidratación: <%= showValue(historia.hidratacion) %><br />
+                    Temperatura: <%= showValue(historia.temperatura) %>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Estado de mucosa</th>
+                  <td>
+                    Palpebral: <%= showValue(historia.mucosa_palpebral) %><br />
+                    Escleral: <%= showValue(historia.mucosa_escleral) %><br />
+                    Bucal: <%= showValue(historia.mucosa_bucal) %><br />
+                    Vul/Pen: <%= showValue(historia.mucosa_vulpen) %>
+                  </td>
+                </tr>
+                <tr><th>Diagnóstico presuntivo</th><td><%= showValue(historia.diagnostico_presuntivo) %></td></tr>
+                <tr><th>Diagnóstico diferencial</th><td><%= showValue(historia.diagnostico_diferencial) %></td></tr>
+                <tr><th>Diagnóstico definitivo</th><td><%= showValue(historia.diagnostico_definitivo) %></td></tr>
+                <tr><th>Análisis solicitados</th><td><%= showValue(historia.analisis_solicitados) %></td></tr>
+                <tr><th>Tratamiento y medicación</th><td><%= showValue(historia.tratamiento) %></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

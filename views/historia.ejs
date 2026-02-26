@@ -216,13 +216,6 @@
                   <th>Fecha</th>
                   <th>Motivo</th>
                   <th>Aspecto general</th>
-                  <th>Estado nutrición</th>
-                  <th>Últ. desparacitación</th>
-                  <th>Parámetros</th>
-                  <th>Estado de mucosa</th>
-                  <th>Diagnóstico</th>
-                  <th>Análisis solicitados</th>
-                  <th>Tratamiento y medicación</th>
                 </tr>
               </thead>
               <tbody id="historias-body">
@@ -231,31 +224,14 @@
                     data-mascota-id="<%= historia.mascota_id %>"
                     data-fecha="<%= historia.fecha ? historia.fecha.toString().split('T')[0] : '' %>"
                   >
-                    <td><%= historia.mascota_nombre %></td>
+                    <td>
+                      <a href="/historia-clinica/<%= historia.id %>">
+                        <%= historia.mascota_nombre %>
+                      </a>
+                    </td>
                     <td><%= formatShortDate(historia.fecha) %></td>
                     <td><%= historia.motivo %></td>
                     <td><%= historia.aspecto_general || '-' %></td>
-                    <td><%= historia.estado_nutricion || '-' %></td>
-                    <td><%= formatShortDate(historia.ultima_desparacitacion) || '-' %></td>
-                    <td>
-                      FC: <%= historia.frecuencia_cardiaca || '-' %><br />
-                      FR: <%= historia.frecuencia_respiratoria || '-' %><br />
-                      Hidr.: <%= historia.hidratacion || '-' %><br />
-                      Temp.: <%= historia.temperatura || '-' %>
-                    </td>
-                    <td>
-                      Palp: <%= historia.mucosa_palpebral || '-' %><br />
-                      Escl: <%= historia.mucosa_escleral || '-' %><br />
-                      Buc: <%= historia.mucosa_bucal || '-' %><br />
-                      Vul/Pen: <%= historia.mucosa_vulpen || '-' %>
-                    </td>
-                    <td>
-                      Pres: <%= historia.diagnostico_presuntivo || '-' %><br />
-                      Dif: <%= historia.diagnostico_diferencial || '-' %><br />
-                      Def: <%= historia.diagnostico_definitivo || '-' %>
-                    </td>
-                    <td><%= historia.analisis_solicitados || '-' %></td>
-                    <td><%= historia.tratamiento || '-' %></td>
                   </tr>
                 <% }) %>
               </tbody>

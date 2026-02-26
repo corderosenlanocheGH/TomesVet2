@@ -2,16 +2,25 @@
 <%- include('partials/nav') %>
 
 <main class="content-area">
-  <div class="p-4 p-lg-5 bg-white rounded-4 shadow-sm mb-4">
-    <h1 class="display-6 fw-bold">Gestión veterinaria TomesVet</h1>
-    <p class="text-muted mb-0">
-      Administra clientes, mascotas, usuarios e historias clínicas desde un solo lugar.
-    </p>
+  <div class="hero-panel mb-4">
+    <div class="hero-copy">
+      <span class="hero-kicker">Panel principal</span>
+      <h1 class="hero-title">Gestión veterinaria con estilo moderno y cálido</h1>
+      <p class="hero-description mb-0">
+        Visualizá el estado de tu clínica en segundos y gestioná clientes, mascotas,
+        usuarios e historias clínicas desde una experiencia más clara y agradable.
+      </p>
+    </div>
+    <div class="hero-badge-box">
+      <p class="hero-badge-label">Estado del sistema</p>
+      <p class="hero-badge-value">Operativo</p>
+      <span class="hero-badge-dot">● Actualizado hoy</span>
+    </div>
   </div>
 
   <div class="row g-4">
     <div class="col-12 col-md-6 col-xl-3">
-      <div class="card border-0 shadow-sm h-100">
+      <div class="card metric-card border-0 h-100">
         <div class="card-body">
           <h5 class="card-title">Clientes registrados</h5>
           <p class="display-6 fw-semibold mb-0"><%= counts.clientes %></p>
@@ -19,7 +28,7 @@
       </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
-      <div class="card border-0 shadow-sm h-100">
+      <div class="card metric-card border-0 h-100">
         <div class="card-body">
           <h5 class="card-title">Mascotas activas</h5>
           <p class="display-6 fw-semibold mb-0"><%= counts.mascotas %></p>
@@ -27,7 +36,7 @@
       </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
-      <div class="card border-0 shadow-sm h-100">
+      <div class="card metric-card border-0 h-100">
         <div class="card-body">
           <h5 class="card-title">Usuarios del sistema</h5>
           <p class="display-6 fw-semibold mb-0"><%= counts.usuarios %></p>
@@ -35,7 +44,7 @@
       </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
-      <div class="card border-0 shadow-sm h-100">
+      <div class="card metric-card border-0 h-100">
         <div class="card-body">
           <h5 class="card-title">Historias clínicas</h5>
           <p class="display-6 fw-semibold mb-0"><%= counts.historias %></p>
@@ -43,7 +52,7 @@
       </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
-      <div class="card border-0 shadow-sm h-100">
+      <div class="card metric-card border-0 h-100">
         <div class="card-body">
           <h5 class="card-title">Vacunas registradas</h5>
           <p class="display-6 fw-semibold mb-0"><%= counts.vacunas %></p>
@@ -51,7 +60,7 @@
       </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
-      <div class="card border-0 shadow-sm h-100">
+      <div class="card metric-card border-0 h-100">
         <div class="card-body">
           <h5 class="card-title">Turnos agendados</h5>
           <p class="display-6 fw-semibold mb-0"><%= counts.turnos %></p>

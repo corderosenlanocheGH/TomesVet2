@@ -1,11 +1,13 @@
 :root {
   color-scheme: light;
-  --vet-teal: #0f8b8d;
-  --vet-teal-dark: #0a6f72;
-  --vet-light: #f1f5f8;
+  --vet-teal: #3f7f77;
+  --vet-teal-dark: #2f5f5c;
+  --vet-light: #f5f0e8;
   --vet-card: #ffffff;
-  --vet-text: #1f2933;
-  --vet-muted: #6b7c93;
+  --vet-text: #2b2a28;
+  --vet-muted: #7f756c;
+  --vet-border: #dfd4c6;
+  --vet-accent: #c58f57;
 }
 
 body {
@@ -22,13 +24,13 @@ body {
 
 .sidebar {
   width: 260px;
-  background: linear-gradient(180deg, var(--vet-teal), var(--vet-teal-dark));
+  background: linear-gradient(180deg, #d8c6af 0%, #ceb396 100%);
   color: #fff;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 1.25rem;
   gap: 1.5rem;
-  box-shadow: 0 8px 24px rgba(15, 139, 141, 0.2);
+  box-shadow: 0 10px 24px rgba(82, 63, 45, 0.18);
 }
 
 .sidebar-header {
@@ -40,13 +42,14 @@ body {
 .sidebar-brand {
   font-weight: 700;
   font-size: 1.25rem;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.1em;
+  color: #423426;
 }
 
 .sidebar-toggle {
   border: none;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: rgba(66, 52, 38, 0.1);
+  color: #423426;
   width: 36px;
   height: 36px;
   border-radius: 10px;
@@ -58,7 +61,7 @@ body {
   display: flex;
   gap: 0.75rem;
   align-items: center;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.4);
   padding: 0.75rem;
   border-radius: 16px;
 }
@@ -67,7 +70,8 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(66, 52, 38, 0.16);
+  color: #423426;
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -76,11 +80,12 @@ body {
 .sidebar-name {
   margin: 0;
   font-weight: 600;
+  color: #423426;
 }
 
 .sidebar-role {
   font-size: 0.75rem;
-  opacity: 0.85;
+  color: #67584a;
 }
 
 .sidebar-nav {
@@ -95,16 +100,16 @@ body {
   gap: 0.75rem;
   padding: 0.65rem 0.85rem;
   border-radius: 12px;
-  color: #fff;
+  color: #423426;
   text-decoration: none;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.5);
   transition: background 0.2s ease;
 }
 
 .sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.85);
+  color: #2e2216;
 }
 
 .sidebar-footer {
@@ -114,12 +119,12 @@ body {
   gap: 0.5rem;
   font-size: 0.9rem;
   opacity: 0.85;
-  color: #fff;
+  color: #423426;
   text-decoration: none;
 }
 
 .sidebar-footer:hover {
-  color: #fff;
+  color: #2e2216;
   opacity: 1;
 }
 
@@ -130,13 +135,13 @@ body {
 }
 
 .topbar {
-  background: linear-gradient(90deg, var(--vet-teal), var(--vet-teal-dark));
+  background: linear-gradient(90deg, #fffaf2, #f0e5d7);
   padding: 1rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: none;
-  box-shadow: 0 8px 16px rgba(15, 139, 141, 0.2);
+  box-shadow: 0 8px 20px rgba(70, 53, 38, 0.1);
 }
 
 .topbar-title {
@@ -144,7 +149,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #fff;
+  color: #4b3b2c;
 }
 
 .topbar-actions {
@@ -157,11 +162,11 @@ body {
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--vet-border);
+  background: rgba(255, 255, 255, 0.9);
   display: grid;
   place-items: center;
-  color: #fff;
+  color: #4b3b2c;
 }
 
 .topbar-user {
@@ -174,8 +179,8 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  color: #fff;
+  background: #d6c1aa;
+  color: #4b3b2c;
   display: grid;
   place-items: center;
   font-weight: 600;
@@ -184,24 +189,102 @@ body {
 .topbar-name {
   margin: 0;
   font-weight: 600;
-  color: #fff;
+  color: #4b3b2c;
 }
 
 .topbar-role {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: #7f756c;
 }
 
 .content-area {
   padding: 2rem;
 }
 
+.hero-panel {
+  background: linear-gradient(145deg, #fef9f0, #f2e3d1);
+  border: 1px solid var(--vet-border);
+  border-radius: 28px;
+  padding: 1.8rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  box-shadow: 0 14px 30px rgba(74, 56, 40, 0.12);
+}
+
+.hero-copy {
+  max-width: 720px;
+}
+
+.hero-kicker {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--vet-accent);
+}
+
+.hero-title {
+  margin: 0.5rem 0;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: clamp(1.7rem, 2.2vw, 2.2rem);
+  color: #2d241b;
+}
+
+.hero-description {
+  color: #67584a;
+  max-width: 62ch;
+}
+
+.hero-badge-box {
+  min-width: 190px;
+  align-self: center;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--vet-border);
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+.hero-badge-label {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vet-muted);
+}
+
+.hero-badge-value {
+  margin: 0.35rem 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #2d241b;
+}
+
+.hero-badge-dot {
+  color: #39766f;
+  font-size: 0.9rem;
+}
+
 .content-area .card {
   border-radius: 18px;
+  border: 1px solid var(--vet-border);
+  box-shadow: 0 12px 24px rgba(68, 53, 37, 0.08);
 }
 
 .content-area .card-body {
   padding: 1.5rem;
+}
+
+.metric-card .card-title {
+  color: #6f6255;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.75rem;
+}
+
+.metric-card .display-6 {
+  color: #2d241b;
 }
 
 .page-header {
@@ -302,12 +385,12 @@ body {
 }
 
 .content-area .table tbody tr {
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 8px 18px rgba(68, 53, 37, 0.08);
 }
 
 .content-area .table tbody td {
   padding: 0.85rem 1rem;
-  background: #fff;
+  background: #fffefb;
 }
 
 .content-area .table tbody tr td:first-child {
@@ -388,6 +471,14 @@ table th {
   .page-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .hero-panel {
+    flex-direction: column;
+  }
+
+  .hero-badge-box {
+    align-self: flex-start;
   }
 }
 

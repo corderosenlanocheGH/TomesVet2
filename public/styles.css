@@ -7,7 +7,11 @@
   --vet-text: #2b2a28;
   --vet-muted: #7f756c;
   --vet-border: #dfd4c6;
-  --vet-accent: #c58f57;
+  --vet-accent: #e58a33;
+  --pet-green: #2f8d64;
+  --pet-green-soft: #dff3e6;
+  --pet-orange: #f09a3e;
+  --pet-orange-soft: #fff1df;
 }
 
 body {
@@ -648,6 +652,81 @@ body {
 table td,
 table th {
   vertical-align: middle;
+}
+
+
+.content-area .card {
+  background: #fffdf8;
+  border: 1px solid #eadfce;
+}
+
+.content-area .card-title {
+  color: #2f4b3a;
+}
+
+.content-area .form-label {
+  font-weight: 600;
+  color: #2f4b3a;
+}
+
+.content-area .form-control,
+.content-area .form-select {
+  border-color: #d8cfbf;
+  background: #fffefb;
+}
+
+.content-area .form-control:focus,
+.content-area .form-select:focus {
+  border-color: var(--pet-green);
+  box-shadow: 0 0 0 0.2rem rgba(47, 141, 100, 0.16);
+}
+
+.content-area .btn-primary {
+  background: linear-gradient(120deg, var(--pet-green), #47a775);
+  border-color: var(--pet-green);
+  color: #f8fff9;
+}
+
+.content-area .btn-primary:hover,
+.content-area .btn-primary:focus {
+  background: linear-gradient(120deg, #257550, #3f9569);
+  border-color: #257550;
+  color: #f8fff9;
+}
+
+.content-area .btn-outline-primary {
+  color: var(--pet-green);
+  border-color: #58a97a;
+}
+
+.content-area .btn-outline-primary:hover {
+  background: var(--pet-green-soft);
+  color: #1f6843;
+  border-color: var(--pet-green);
+}
+
+.content-area .btn-outline-secondary {
+  color: #a4601c;
+  border-color: #e9b179;
+  background: #fff;
+}
+
+.content-area .btn-outline-secondary:hover {
+  background: var(--pet-orange-soft);
+  border-color: var(--pet-orange);
+  color: #8d4f14;
+}
+
+.content-area .table thead th {
+  color: #5f6f63;
+}
+
+.content-area .table tbody td {
+  background: #fffdfa;
+}
+
+.content-area .table tbody tr:hover td {
+  background: #fff4e8;
 }
 
 @media (max-width: 991px) {

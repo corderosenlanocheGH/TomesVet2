@@ -2,68 +2,84 @@
 <%- include('partials/nav') %>
 
 <main class="content-area">
-  <div class="hero-panel mb-4">
-    <div class="hero-copy">
-      <span class="hero-kicker">Panel principal</span>
-      <h1 class="hero-title">Gestión veterinaria con estilo moderno y cálido</h1>
-      <p class="hero-description mb-0">
-        Visualizá el estado de tu clínica en segundos y gestioná clientes, mascotas,
-        usuarios e historias clínicas desde una experiencia más clara y agradable.
+  <section class="pet-hero mb-4">
+    <div class="pet-hero-copy">
+      <span class="pet-hero-kicker">TomesVet Dashboard</span>
+      <h1 class="pet-hero-title">Easy care for every pet in your clinic</h1>
+      <p class="pet-hero-description mb-0">
+        Inspirado en un layout pet-shop: visual, amigable y pensado para revisar el estado
+        de la clínica en un solo vistazo.
       </p>
+      <div class="pet-hero-actions mt-3">
+        <a href="/turnos" class="btn rounded-pill px-3 pet-btn-primary">Ver turnos</a>
+        <a href="/mascotas" class="btn rounded-pill px-3 pet-btn-secondary">Ver mascotas</a>
+      </div>
     </div>
-    <div class="hero-badge-box">
-      <p class="hero-badge-label">Estado del sistema</p>
-      <p class="hero-badge-value">Operativo</p>
-      <span class="hero-badge-dot">● Actualizado hoy</span>
+    <div class="pet-hero-illustration" aria-hidden="true">
+      <div class="pet-bubble pet-bubble-main">🐶</div>
+      <div class="pet-bubble pet-bubble-secondary">🐱</div>
+      <div class="pet-badge">● Sistema operativo</div>
     </div>
-  </div>
+  </section>
+
+  <section class="pet-section mb-4">
+    <div class="pet-section-header">
+      <h2 class="pet-section-title">Your plays</h2>
+      <span class="pet-section-pill">Resumen</span>
+    </div>
+    <div class="pet-metric-grid">
+      <article class="pet-metric-card">
+        <span class="pet-metric-icon">👤</span>
+        <p class="pet-metric-label">Clientes</p>
+        <p class="pet-metric-value"><%= counts.clientes %></p>
+      </article>
+      <article class="pet-metric-card">
+        <span class="pet-metric-icon">🐾</span>
+        <p class="pet-metric-label">Mascotas</p>
+        <p class="pet-metric-value"><%= counts.mascotas %></p>
+      </article>
+      <article class="pet-metric-card">
+        <span class="pet-metric-icon">🩺</span>
+        <p class="pet-metric-label">Historias</p>
+        <p class="pet-metric-value"><%= counts.historias %></p>
+      </article>
+      <article class="pet-metric-card">
+        <span class="pet-metric-icon">💉</span>
+        <p class="pet-metric-label">Vacunas</p>
+        <p class="pet-metric-value"><%= counts.vacunas %></p>
+      </article>
+      <article class="pet-metric-card">
+        <span class="pet-metric-icon">📅</span>
+        <p class="pet-metric-label">Turnos</p>
+        <p class="pet-metric-value"><%= counts.turnos %></p>
+      </article>
+      <article class="pet-metric-card">
+        <span class="pet-metric-icon">🧑‍⚕️</span>
+        <p class="pet-metric-label">Usuarios</p>
+        <p class="pet-metric-value"><%= counts.usuarios %></p>
+      </article>
+    </div>
+  </section>
 
   <div class="row g-4">
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card metric-card border-0 h-100">
+    <div class="col-12 col-lg-7">
+      <div class="card pet-banner-card border-0 h-100">
         <div class="card-body">
-          <h5 class="card-title">Clientes registrados</h5>
-          <p class="display-6 fw-semibold mb-0"><%= counts.clientes %></p>
+          <span class="pet-banner-kicker">Visitar sitio web</span>
+          <h3 class="pet-banner-title">Tu clínica con look pet-care moderno</h3>
+          <p class="mb-0">
+            Esta portada replica la estética del ejemplo con bloques suaves, tarjetas redondeadas
+            y enfoque en información rápida.
+          </p>
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card metric-card border-0 h-100">
+    <div class="col-12 col-lg-5">
+      <div class="card pet-highlight-card border-0 h-100">
         <div class="card-body">
-          <h5 class="card-title">Mascotas activas</h5>
-          <p class="display-6 fw-semibold mb-0"><%= counts.mascotas %></p>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card metric-card border-0 h-100">
-        <div class="card-body">
-          <h5 class="card-title">Usuarios del sistema</h5>
-          <p class="display-6 fw-semibold mb-0"><%= counts.usuarios %></p>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card metric-card border-0 h-100">
-        <div class="card-body">
-          <h5 class="card-title">Historias clínicas</h5>
-          <p class="display-6 fw-semibold mb-0"><%= counts.historias %></p>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card metric-card border-0 h-100">
-        <div class="card-body">
-          <h5 class="card-title">Vacunas registradas</h5>
-          <p class="display-6 fw-semibold mb-0"><%= counts.vacunas %></p>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card metric-card border-0 h-100">
-        <div class="card-body">
-          <h5 class="card-title">Turnos agendados</h5>
-          <p class="display-6 fw-semibold mb-0"><%= counts.turnos %></p>
+          <p class="pet-highlight-label">Agenda del día</p>
+          <p class="pet-highlight-value mb-2"><%= counts.turnos %> turnos</p>
+          <p class="mb-0">Mantené al día vacunación y controles con una vista clara.</p>
         </div>
       </div>
     </div>

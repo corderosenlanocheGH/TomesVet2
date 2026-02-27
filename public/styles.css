@@ -142,13 +142,13 @@ body {
 }
 
 .topbar {
-  background: linear-gradient(90deg, #fffaf2, #f0e5d7);
+  background: linear-gradient(90deg, #2f8d64 0%, #46a36f 55%, #63b983 100%);
   padding: 1rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: none;
-  box-shadow: 0 8px 20px rgba(70, 53, 38, 0.1);
+  border-bottom: 1px solid rgba(255, 224, 186, 0.45);
+  box-shadow: 0 10px 22px rgba(32, 84, 56, 0.25);
 }
 
 .topbar-title {
@@ -156,7 +156,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #4b3b2c;
+  color: #f3fff5;
 }
 
 .topbar-actions {
@@ -169,11 +169,11 @@ body {
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  border: 1px solid var(--vet-border);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.2);
   display: grid;
   place-items: center;
-  color: #4b3b2c;
+  color: #f3fff5;
 }
 
 .topbar-user {
@@ -186,8 +186,8 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #d6c1aa;
-  color: #4b3b2c;
+  background: linear-gradient(145deg, #fff3de, #ffd29b);
+  color: #1f6843;
   display: grid;
   place-items: center;
   font-weight: 600;
@@ -196,12 +196,12 @@ body {
 .topbar-name {
   margin: 0;
   font-weight: 600;
-  color: #4b3b2c;
+  color: #f3fff5;
 }
 
 .topbar-role {
   font-size: 0.75rem;
-  color: #7f756c;
+  color: #e7f8ea;
 }
 
 .content-area {

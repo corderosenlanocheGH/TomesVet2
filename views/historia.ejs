@@ -13,6 +13,8 @@
     }
     return value;
   };
+
+  const currentDate = new Date().toISOString().split('T')[0];
 %>
 <%- include('partials/nav') %>
 
@@ -23,7 +25,7 @@
         <div class="card border-0 shadow-sm">
           <div class="card-body">
             <h4 class="card-title mb-3">Nueva Ficha medica</h4>
-            <form action="/historia-clinica" method="POST" class="d-grid gap-3">
+            <form action="/historia-clinica" method="POST" class="d-grid gap-3" id="historia-form">
               <div class="row g-3">
                 <div class="col-md-4">
                   <label class="form-label">Mascota</label>
@@ -41,7 +43,7 @@
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">Fecha</label>
-                  <input class="form-control" type="date" name="fecha" required />
+                  <input class="form-control" type="date" name="fecha" value="<%= currentDate %>" required />
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">Motivo</label>
@@ -160,6 +162,18 @@
                 <label class="form-label">Otros Datos</label>
                 <textarea class="form-control" name="otros_datos" rows="2"></textarea>
               </div>
+              <div>
+                <label class="form-label">Documentación adjunta (PDF)</label>
+                <input
+                  class="form-control"
+                  type="file"
+                  name="documentacion_adjunta"
+                  id="documentacion-adjunta"
+                  accept="application/pdf,.pdf"
+                />
+                <input type="hidden" name="documentacion_adjunta_nombre" id="documentacion-adjunta-nombre" />
+                <input type="hidden" name="documentacion_adjunta_base64" id="documentacion-adjunta-base64" />
+              </div>
               <div class="d-flex gap-2">
                 <button class="btn btn-primary" type="submit">Guardar</button>
                 <a class="btn btn-outline-secondary" href="/historia-clinica">Cancelar</a>
@@ -259,6 +273,10 @@
   const fechaDesde = document.getElementById('historia-desde');
   const fechaHasta = document.getElementById('historia-hasta');
   const limpiarHistoria = document.getElementById('historia-limpiar');
+  const historiaForm = document.getElementById('historia-form');
+  const documentacionAdjuntaInput = document.getElementById('documentacion-adjunta');
+  const documentacionAdjuntaNombre = document.getElementById('documentacion-adjunta-nombre');
+  const documentacionAdjuntaBase64 = document.getElementById('documentacion-adjunta-base64');
 
   const normalizeText = (value = '') =>
     value
@@ -311,6 +329,40 @@
     fechaHasta.addEventListener('change', applyHistoriaFilters);
     limpiarHistoria.addEventListener('click', clearHistoriaFilters);
     applyHistoriaFilters();
+  }
+
+  if (historiaForm && documentacionAdjuntaInput && documentacionAdjuntaNombre && documentacionAdjuntaBase64) {
+    historiaForm.addEventListener('submit', async (event) => {
+      const [file] = documentacionAdjuntaInput.files || [];
+      if (!file) return;
+
+      const isPdfMime = file.type === 'application/pdf';
+      const isPdfExtension = file.name.toLowerCase().endsWith('.pdf');
+
+      if (!isPdfMime || !isPdfExtension) {
+        event.preventDefault();
+        alert('La documentación adjunta debe ser un archivo PDF válido.');
+        return;
+      }
+
+      event.preventDefault();
+      const readAsDataUrl = () =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('No se pudo leer el archivo adjunto.'));
+          reader.readAsDataURL(file);
+        });
+
+      try {
+        const encodedFile = await readAsDataUrl();
+        documentacionAdjuntaNombre.value = file.name;
+        documentacionAdjuntaBase64.value = encodedFile;
+        historiaForm.submit();
+      } catch (error) {
+        alert(error.message || 'No se pudo procesar el archivo adjunto.');
+      }
+    });
   }
 </script>
 

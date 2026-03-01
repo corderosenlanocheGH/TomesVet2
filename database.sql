@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS mascotas (
   nombre VARCHAR(120) NOT NULL,
   especie VARCHAR(80) NOT NULL,
   raza VARCHAR(80),
+  sexo VARCHAR(20) NOT NULL,
+  tamanio VARCHAR(20) NOT NULL,
   fecha_nacimiento DATE,
   cliente_id INT NOT NULL,
   CONSTRAINT fk_mascota_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id)
@@ -111,10 +113,10 @@ VALUES
   ('Carolina López', '555-1234', 'carolina@example.com', 'Av. Siempre Viva 123'),
   ('Miguel Rojas', '555-9876', 'miguel@example.com', 'Calle 45 #10-20');
 
-INSERT INTO mascotas (nombre, especie, raza, fecha_nacimiento, cliente_id)
+INSERT INTO mascotas (nombre, especie, raza, sexo, tamanio, fecha_nacimiento, cliente_id)
 VALUES
-  ('Nala', 'Perro', 'Golden Retriever', '2021-04-12', 1),
-  ('Milo', 'Gato', 'Siamés', '2020-09-05', 2);
+  ('Nala', 'Perro', 'Golden Retriever', 'Hembra', 'Grande', '2021-04-12', 1),
+  ('Milo', 'Gato', 'Siamés', 'Macho', 'Pequeño', '2020-09-05', 2);
 
 INSERT INTO usuarios (nombre, rol, email)
 VALUES

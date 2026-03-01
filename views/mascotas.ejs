@@ -97,6 +97,37 @@
                 </select>
               </div>
               <div>
+                <label class="form-label">Sexo</label>
+                <select class="form-select" name="sexo" required>
+                  <option value="" disabled <%= mascotaEditar ? '' : 'selected' %>>
+                    Selecciona el sexo
+                  </option>
+                  <option value="Macho" <%= mascotaEditar && mascotaEditar.sexo === 'Macho' ? 'selected' : '' %>>
+                    Macho
+                  </option>
+                  <option value="Hembra" <%= mascotaEditar && mascotaEditar.sexo === 'Hembra' ? 'selected' : '' %>>
+                    Hembra
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Tamaño</label>
+                <select class="form-select" name="tamanio" required>
+                  <option value="" disabled <%= mascotaEditar ? '' : 'selected' %>>
+                    Selecciona un tamaño
+                  </option>
+                  <option value="Grande" <%= mascotaEditar && mascotaEditar.tamanio === 'Grande' ? 'selected' : '' %>>
+                    Grande
+                  </option>
+                  <option value="Mediano" <%= mascotaEditar && mascotaEditar.tamanio === 'Mediano' ? 'selected' : '' %>>
+                    Mediano
+                  </option>
+                  <option value="Pequeño" <%= mascotaEditar && mascotaEditar.tamanio === 'Pequeño' ? 'selected' : '' %>>
+                    Pequeño
+                  </option>
+                </select>
+              </div>
+              <div>
                 <label class="form-label">Fecha de nacimiento</label>
                 <input
                   class="form-control"
@@ -174,6 +205,8 @@
                   <th>Nombre</th>
                   <th>Especie</th>
                   <th>Raza</th>
+                  <th>Sexo</th>
+                  <th>Tamaño</th>
                   <th>Fecha nacimiento</th>
                   <th>Cliente</th>
                   <th></th>
@@ -185,6 +218,8 @@
                     <td><%= mascota.nombre %></td>
                     <td><%= mascota.especie %></td>
                     <td><%= mascota.raza || '-' %></td>
+                    <td><%= mascota.sexo || '-' %></td>
+                    <td><%= mascota.tamanio || '-' %></td>
                     <td><%= formatShortDate(mascota.fecha_nacimiento) || '-' %></td>
                     <td>
                       <a class="link-secondary text-decoration-none" href="/clientes?mascota_id=<%= mascota.id %>">

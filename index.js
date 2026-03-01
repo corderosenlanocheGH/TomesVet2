@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: '20mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const asyncHandler = (handler) => (req, res, next) =>
@@ -39,23 +39,6 @@ const TAMANIOS_MASCOTA = new Set(['Grande', 'Mediano', 'Pequeño']);
 const HISTORIA_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'historia-clinica');
 
 const getFieldValue = (field) => (Array.isArray(field) ? field[0] : field);
-
-const parseHistoriaForm = (req) =>
-  new Promise((resolve, reject) => {
-    const form = formidable({
-      multiples: false,
-      keepExtensions: true,
-      uploadDir: HISTORIA_UPLOAD_DIR,
-    });
-
-    form.parse(req, (error, fields, files) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve({ fields, files });
-    });
-  });
 
 const ensureMascotasRazasHasEspecieRelation = async () => {
   const [columns] = await pool.query(
@@ -500,30 +483,8 @@ app.get(
 app.post(
   '/historia-clinica',
   asyncHandler(async (req, res) => {
-    const { fields, files } = await parseHistoriaForm(req);
-
-    const uploadedPdf = getFieldValue(files.documentacion_adjunta);
     let documentoAdjuntoNombre = null;
     let documentoAdjuntoRuta = null;
-
-    if (uploadedPdf && uploadedPdf.filepath) {
-      const isPdfMimeType = uploadedPdf.mimetype === 'application/pdf';
-      const originalName = uploadedPdf.originalFilename || '';
-      const hasPdfExtension = originalName.toLowerCase().endsWith('.pdf');
-
-      if (!isPdfMimeType || !hasPdfExtension) {
-        await fs.unlink(uploadedPdf.filepath);
-        throw new Error('La documentación adjunta debe ser un archivo PDF válido.');
-      }
-
-      const extension = path.extname(originalName) || '.pdf';
-      const uniqueFileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`;
-      const targetFilePath = path.join(HISTORIA_UPLOAD_DIR, uniqueFileName);
-      await fs.rename(uploadedPdf.filepath, targetFilePath);
-
-      documentoAdjuntoNombre = originalName;
-      documentoAdjuntoRuta = `/uploads/historia-clinica/${uniqueFileName}`;
-    }
 
     const {
       mascota_id,
@@ -546,9 +507,30 @@ app.post(
       analisis_solicitados,
       tratamiento,
       otros_datos,
+      documentacion_adjunta_nombre,
+      documentacion_adjunta_base64,
     } = Object.fromEntries(
-      Object.entries(fields).map(([key, value]) => [key, getFieldValue(value)])
+      Object.entries(req.body).map(([key, value]) => [key, getFieldValue(value)])
     );
+
+    if (documentacion_adjunta_base64) {
+      const originalName = (documentacion_adjunta_nombre || '').trim();
+      const hasPdfExtension = originalName.toLowerCase().endsWith('.pdf');
+      const hasPdfPrefix = documentacion_adjunta_base64.startsWith('data:application/pdf;base64,');
+
+      if (!hasPdfExtension || !hasPdfPrefix) {
+        throw new Error('La documentación adjunta debe ser un archivo PDF válido.');
+      }
+
+      const base64Data = documentacion_adjunta_base64.replace('data:application/pdf;base64,', '');
+      const pdfBuffer = Buffer.from(base64Data, 'base64');
+      const uniqueFileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
+      const targetFilePath = path.join(HISTORIA_UPLOAD_DIR, uniqueFileName);
+      await fs.writeFile(targetFilePath, pdfBuffer);
+
+      documentoAdjuntoNombre = originalName;
+      documentoAdjuntoRuta = `/uploads/historia-clinica/${uniqueFileName}`;
+    }
     await pool.query(
       `INSERT INTO historia_clinica (
         mascota_id,

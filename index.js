@@ -240,7 +240,7 @@ app.post(
 );
 
 app.post(
-  '/mascotas/:id',
+  '/mascotas/:id(\\d+)',
   asyncHandler(async (req, res) => {
     const { nombre, especie, raza, fecha_nacimiento, cliente_id } = req.body;
     const razaValidada = await validateBreedBySpecies(especie, raza);

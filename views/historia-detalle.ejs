@@ -25,7 +25,10 @@
         <div class="card-body">
           <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
             <h4 class="card-title mb-0">Detalle de historia clínica</h4>
-            <a class="btn btn-outline-secondary" href="/historia-clinica">Volver al listado</a>
+            <div class="d-flex gap-2">
+              <a class="btn btn-outline-primary" href="/historia-clinica/<%= historia.id %>/imprimir" target="_blank" rel="noopener noreferrer">Generar PDF</a>
+              <a class="btn btn-outline-secondary" href="/historia-clinica">Volver al listado</a>
+            </div>
           </div>
 
           <div class="table-responsive">

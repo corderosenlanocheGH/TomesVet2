@@ -269,6 +269,27 @@ app.get(
   })
 );
 
+app.get(
+  '/historia-clinica/:id/imprimir',
+  asyncHandler(async (req, res) => {
+    const [historias] = await pool.query(
+      `SELECT historia_clinica.*, mascotas.nombre AS mascota_nombre
+       FROM historia_clinica
+       JOIN mascotas ON mascotas.id = historia_clinica.mascota_id
+       WHERE historia_clinica.id = ?`,
+      [req.params.id]
+    );
+
+    if (!historias.length) {
+      return res.status(404).render('error', {
+        message: 'La historia clínica solicitada no existe.',
+      });
+    }
+
+    return res.render('historia-detalle-print', { historia: historias[0] });
+  })
+);
+
 app.post(
   '/historia-clinica',
   asyncHandler(async (req, res) => {

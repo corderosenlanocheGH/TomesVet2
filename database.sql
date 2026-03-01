@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   analisis_solicitados TEXT,
   tratamiento TEXT,
   otros_datos TEXT,
+  documento_adjunto_nombre VARCHAR(255),
+  documento_adjunto_ruta VARCHAR(255),
   CONSTRAINT fk_historia_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
 );
 

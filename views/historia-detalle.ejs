@@ -68,6 +68,30 @@
                 <tr><th>Análisis solicitados</th><td><%= showValue(historia.analisis_solicitados) %></td></tr>
                 <tr><th>Tratamiento y medicación</th><td><%= showValue(historia.tratamiento) %></td></tr>
                 <tr><th>Otros Datos</th><td><%= showValue(historia.otros_datos) %></td></tr>
+                <tr>
+                  <th>Documentación adjunta</th>
+                  <td>
+                    <% if (historia.documento_adjunto_ruta) { %>
+                      <a
+                        class="btn btn-sm btn-outline-primary mb-2"
+                        href="<%= historia.documento_adjunto_ruta %>"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Ver PDF adjunto (<%= historia.documento_adjunto_nombre || 'Documento PDF' %>)
+                      </a>
+                      <iframe
+                        src="<%= historia.documento_adjunto_ruta %>"
+                        title="Documentación adjunta"
+                        width="100%"
+                        height="500"
+                        class="border rounded"
+                      ></iframe>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>

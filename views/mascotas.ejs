@@ -54,7 +54,7 @@
               </div>
               <div>
                 <label class="form-label">Especie</label>
-                <select class="form-select" name="especie" required>
+                <select class="form-select" name="especie" id="mascota-especie" required>
                   <option value="" disabled <%= mascotaEditar ? '' : 'selected' %>>
                     Selecciona una especie
                   </option>
@@ -75,13 +75,15 @@
               </div>
               <div>
                 <label class="form-label">Raza</label>
-                <select class="form-select" name="raza">
+                <select class="form-select" name="raza" id="mascota-raza">
                   <option value="" <%= mascotaEditar && mascotaEditar.raza ? '' : 'selected' %>>
                     Selecciona una raza
                   </option>
                   <% razasMascota.forEach((raza) => { %>
                     <option
                       value="<%= raza.nombre %>"
+                      data-especie-id="<%= raza.especie_id || '' %>"
+                      data-especie-nombre="<%= raza.especie_nombre || '' %>"
                       <%= mascotaEditar && mascotaEditar.raza === raza.nombre ? 'selected' : '' %>
                     >
                       <%= raza.nombre %>
@@ -229,6 +231,36 @@
   const mascotasBusqueda = document.getElementById('mascotas-busqueda');
   const mascotasCliente = document.getElementById('mascotas-cliente');
   const mascotasLimpiar = document.getElementById('mascotas-limpiar');
+  const especieSelect = document.getElementById('mascota-especie');
+  const razaSelect = document.getElementById('mascota-raza');
+
+  const syncRazaOptions = () => {
+    if (!especieSelect || !razaSelect) {
+      return;
+    }
+
+    const especieSeleccionada = especieSelect.value;
+    let selectedOptionStillVisible = false;
+
+    Array.from(razaSelect.options).forEach((option, index) => {
+      if (index === 0) {
+        option.hidden = false;
+        return;
+      }
+
+      const especieNombre = option.dataset.especieNombre || '';
+      const shouldShow = !especieSeleccionada || especieNombre === especieSeleccionada;
+      option.hidden = !shouldShow;
+
+      if (shouldShow && option.selected) {
+        selectedOptionStillVisible = true;
+      }
+    });
+
+    if (!selectedOptionStillVisible) {
+      razaSelect.value = '';
+    }
+  };
 
   const applyMascotasFilter = () => {
     const query = normalizeText(mascotasBusqueda.value);
@@ -252,8 +284,10 @@
   mascotasBusqueda.addEventListener('input', applyMascotasFilter);
   mascotasCliente.addEventListener('change', applyMascotasFilter);
   mascotasLimpiar.addEventListener('click', clearMascotasFilter);
+  especieSelect?.addEventListener('change', syncRazaOptions);
 
   applyMascotasFilter();
+  syncRazaOptions();
 </script>
 
 <%- include('partials/footer') %>

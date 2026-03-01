@@ -387,7 +387,12 @@ app.get(
   '/historia-clinica/:id',
   asyncHandler(async (req, res) => {
     const [historias] = await pool.query(
-      `SELECT historia_clinica.*, mascotas.nombre AS mascota_nombre
+      `SELECT historia_clinica.*,
+              mascotas.nombre AS mascota_nombre,
+              mascotas.especie AS mascota_especie,
+              mascotas.raza AS mascota_raza,
+              mascotas.sexo AS mascota_sexo,
+              mascotas.tamanio AS mascota_tamanio
        FROM historia_clinica
        JOIN mascotas ON mascotas.id = historia_clinica.mascota_id
        WHERE historia_clinica.id = ?`,
@@ -408,7 +413,12 @@ app.get(
   '/historia-clinica/:id/imprimir',
   asyncHandler(async (req, res) => {
     const [historias] = await pool.query(
-      `SELECT historia_clinica.*, mascotas.nombre AS mascota_nombre
+      `SELECT historia_clinica.*,
+              mascotas.nombre AS mascota_nombre,
+              mascotas.especie AS mascota_especie,
+              mascotas.raza AS mascota_raza,
+              mascotas.sexo AS mascota_sexo,
+              mascotas.tamanio AS mascota_tamanio
        FROM historia_clinica
        JOIN mascotas ON mascotas.id = historia_clinica.mascota_id
        WHERE historia_clinica.id = ?`,

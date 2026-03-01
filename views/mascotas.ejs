@@ -102,12 +102,14 @@
                   <option value="" disabled <%= mascotaEditar ? '' : 'selected' %>>
                     Selecciona el sexo
                   </option>
-                  <option value="Macho" <%= mascotaEditar && mascotaEditar.sexo === 'Macho' ? 'selected' : '' %>>
-                    Macho
-                  </option>
-                  <option value="Hembra" <%= mascotaEditar && mascotaEditar.sexo === 'Hembra' ? 'selected' : '' %>>
-                    Hembra
-                  </option>
+                  <% sexosMascota.forEach((sexoOpcion) => { %>
+                    <option
+                      value="<%= sexoOpcion %>"
+                      <%= mascotaEditar && mascotaEditar.sexo === sexoOpcion ? 'selected' : '' %>
+                    >
+                      <%= sexoOpcion %>
+                    </option>
+                  <% }) %>
                 </select>
               </div>
               <div>
@@ -116,15 +118,14 @@
                   <option value="" disabled <%= mascotaEditar ? '' : 'selected' %>>
                     Selecciona un tamaño
                   </option>
-                  <option value="Grande" <%= mascotaEditar && mascotaEditar.tamanio === 'Grande' ? 'selected' : '' %>>
-                    Grande
-                  </option>
-                  <option value="Mediano" <%= mascotaEditar && mascotaEditar.tamanio === 'Mediano' ? 'selected' : '' %>>
-                    Mediano
-                  </option>
-                  <option value="Pequeño" <%= mascotaEditar && mascotaEditar.tamanio === 'Pequeño' ? 'selected' : '' %>>
-                    Pequeño
-                  </option>
+                  <% tamaniosMascota.forEach((tamanioOpcion) => { %>
+                    <option
+                      value="<%= tamanioOpcion %>"
+                      <%= mascotaEditar && mascotaEditar.tamanio === tamanioOpcion ? 'selected' : '' %>
+                    >
+                      <%= tamanioOpcion %>
+                    </option>
+                  <% }) %>
                 </select>
               </div>
               <div>

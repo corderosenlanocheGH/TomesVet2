@@ -258,6 +258,8 @@ app.get(
       clientes,
       especiesMascota,
       razasMascota,
+      sexosMascota: Array.from(SEXOS_MASCOTA),
+      tamaniosMascota: Array.from(TAMANIOS_MASCOTA),
       selectedClienteId,
       mascotaEditar,
       showForm,

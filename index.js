@@ -753,9 +753,15 @@ app.post(
 );
 
 app.post(
-  '/mascotas/especie/:id/eliminar',
+  '/mascotas/especie/editar',
   asyncHandler(async (req, res) => {
-    await pool.query('DELETE FROM mascotas_especies WHERE id = ?', [req.params.id]);
+    const { id, nombre } = req.body;
+    if (id && nombre && nombre.trim()) {
+      await pool.query('UPDATE mascotas_especies SET nombre = ? WHERE id = ?', [
+        nombre.trim(),
+        id,
+      ]);
+    }
     res.redirect('/mascotas/valores');
   })
 );
@@ -775,9 +781,16 @@ app.post(
 );
 
 app.post(
-  '/mascotas/raza/:id/eliminar',
+  '/mascotas/raza/editar',
   asyncHandler(async (req, res) => {
-    await pool.query('DELETE FROM mascotas_razas WHERE id = ?', [req.params.id]);
+    const { id, nombre, especie_id } = req.body;
+    if (id && nombre && nombre.trim() && especie_id) {
+      await pool.query('UPDATE mascotas_razas SET nombre = ?, especie_id = ? WHERE id = ?', [
+        nombre.trim(),
+        especie_id,
+        id,
+      ]);
+    }
     res.redirect('/mascotas/valores');
   })
 );

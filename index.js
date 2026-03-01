@@ -131,6 +131,10 @@ app.get(
        ORDER BY mascotas.id DESC`
     );
     const [clientes] = await pool.query('SELECT id, nombre FROM clientes ORDER BY nombre');
+    const [especiesMascota] = await pool.query(
+      'SELECT id, nombre FROM mascotas_especies ORDER BY nombre'
+    );
+    const [razasMascota] = await pool.query('SELECT id, nombre FROM mascotas_razas ORDER BY nombre');
     const selectedClienteId = req.query.cliente_id ? String(req.query.cliente_id) : '';
     let mascotaEditar = null;
     const showForm = Boolean(req.query.editar || req.query.nuevo);
@@ -148,6 +152,8 @@ app.get(
     res.render('mascotas', {
       mascotas,
       clientes,
+      especiesMascota,
+      razasMascota,
       selectedClienteId,
       mascotaEditar,
       showForm,
@@ -645,6 +651,57 @@ app.get(
       'SELECT id, nombre FROM motivos_turno ORDER BY nombre'
     );
     res.render('motivos-turno', { motivosTurno });
+  })
+);
+
+app.get(
+  '/mascotas/valores',
+  asyncHandler(async (req, res) => {
+    const [especiesMascota] = await pool.query(
+      'SELECT id, nombre FROM mascotas_especies ORDER BY nombre'
+    );
+    const [razasMascota] = await pool.query('SELECT id, nombre FROM mascotas_razas ORDER BY nombre');
+    res.render('mascotas-valores', { especiesMascota, razasMascota });
+  })
+);
+
+app.post(
+  '/mascotas/especie',
+  asyncHandler(async (req, res) => {
+    const { nombre } = req.body;
+    if (nombre && nombre.trim()) {
+      await pool.query('INSERT IGNORE INTO mascotas_especies (nombre) VALUES (?)', [
+        nombre.trim(),
+      ]);
+    }
+    res.redirect('/mascotas/valores');
+  })
+);
+
+app.post(
+  '/mascotas/especie/:id/eliminar',
+  asyncHandler(async (req, res) => {
+    await pool.query('DELETE FROM mascotas_especies WHERE id = ?', [req.params.id]);
+    res.redirect('/mascotas/valores');
+  })
+);
+
+app.post(
+  '/mascotas/raza',
+  asyncHandler(async (req, res) => {
+    const { nombre } = req.body;
+    if (nombre && nombre.trim()) {
+      await pool.query('INSERT IGNORE INTO mascotas_razas (nombre) VALUES (?)', [nombre.trim()]);
+    }
+    res.redirect('/mascotas/valores');
+  })
+);
+
+app.post(
+  '/mascotas/raza/:id/eliminar',
+  asyncHandler(async (req, res) => {
+    await pool.query('DELETE FROM mascotas_razas WHERE id = ?', [req.params.id]);
+    res.redirect('/mascotas/valores');
   })
 );
 

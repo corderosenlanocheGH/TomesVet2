@@ -54,22 +54,45 @@
               </div>
               <div>
                 <label class="form-label">Especie</label>
-                <input
-                  class="form-control"
-                  type="text"
-                  name="especie"
-                  value="<%= mascotaEditar ? mascotaEditar.especie : '' %>"
-                  required
-                />
+                <select class="form-select" name="especie" required>
+                  <option value="" disabled <%= mascotaEditar ? '' : 'selected' %>>
+                    Selecciona una especie
+                  </option>
+                  <% especiesMascota.forEach((especie) => { %>
+                    <option
+                      value="<%= especie.nombre %>"
+                      <%= mascotaEditar && mascotaEditar.especie === especie.nombre ? 'selected' : '' %>
+                    >
+                      <%= especie.nombre %>
+                    </option>
+                  <% }) %>
+                  <% if (mascotaEditar && mascotaEditar.especie && !especiesMascota.some((especie) => especie.nombre === mascotaEditar.especie)) { %>
+                    <option value="<%= mascotaEditar.especie %>" selected>
+                      <%= mascotaEditar.especie %> (actual)
+                    </option>
+                  <% } %>
+                </select>
               </div>
               <div>
                 <label class="form-label">Raza</label>
-                <input
-                  class="form-control"
-                  type="text"
-                  name="raza"
-                  value="<%= mascotaEditar ? mascotaEditar.raza || '' : '' %>"
-                />
+                <select class="form-select" name="raza">
+                  <option value="" <%= mascotaEditar && mascotaEditar.raza ? '' : 'selected' %>>
+                    Selecciona una raza
+                  </option>
+                  <% razasMascota.forEach((raza) => { %>
+                    <option
+                      value="<%= raza.nombre %>"
+                      <%= mascotaEditar && mascotaEditar.raza === raza.nombre ? 'selected' : '' %>
+                    >
+                      <%= raza.nombre %>
+                    </option>
+                  <% }) %>
+                  <% if (mascotaEditar && mascotaEditar.raza && !razasMascota.some((raza) => raza.nombre === mascotaEditar.raza)) { %>
+                    <option value="<%= mascotaEditar.raza %>" selected>
+                      <%= mascotaEditar.raza %> (actual)
+                    </option>
+                  <% } %>
+                </select>
               </div>
               <div>
                 <label class="form-label">Fecha de nacimiento</label>

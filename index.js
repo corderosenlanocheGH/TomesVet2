@@ -33,6 +33,62 @@ const formatDateInput = (value) => {
 
 const TURNOS_ESTADOS = new Set(['Pendiente', 'Terminado', 'Cancelado']);
 
+const ensureMascotasRazasHasEspecieRelation = async () => {
+  const [columns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'mascotas_razas'
+       AND COLUMN_NAME = 'especie_id'`
+  );
+
+  if (!columns.length) {
+    await pool.query('ALTER TABLE mascotas_razas ADD COLUMN especie_id INT NULL AFTER nombre');
+    await pool.query(
+      `ALTER TABLE mascotas_razas
+       ADD CONSTRAINT fk_mascotas_raza_especie
+       FOREIGN KEY (especie_id) REFERENCES mascotas_especies(id)
+       ON DELETE CASCADE`
+    );
+    await pool.query(
+      `ALTER TABLE mascotas_razas
+       ADD CONSTRAINT uq_mascotas_raza_especie UNIQUE (nombre, especie_id)`
+    );
+
+    await pool.query(
+      `UPDATE mascotas_razas mr
+       JOIN mascotas m ON m.raza = mr.nombre
+       JOIN mascotas_especies me ON me.nombre = m.especie
+       SET mr.especie_id = me.id
+       WHERE mr.especie_id IS NULL`
+    );
+  }
+};
+
+const validateBreedBySpecies = async (especie, raza) => {
+  const especieNombre = (especie || '').trim();
+  const razaNombre = (raza || '').trim();
+
+  if (!especieNombre || !razaNombre) {
+    return razaNombre;
+  }
+
+  const [rows] = await pool.query(
+    `SELECT mr.nombre
+     FROM mascotas_razas mr
+     JOIN mascotas_especies me ON me.id = mr.especie_id
+     WHERE me.nombre = ? AND mr.nombre = ?
+     LIMIT 1`,
+    [especieNombre, razaNombre]
+  );
+
+  if (!rows.length) {
+    throw new Error('La raza seleccionada no corresponde a la especie elegida');
+  }
+
+  return razaNombre;
+};
+
 app.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -134,7 +190,15 @@ app.get(
     const [especiesMascota] = await pool.query(
       'SELECT id, nombre FROM mascotas_especies ORDER BY nombre'
     );
-    const [razasMascota] = await pool.query('SELECT id, nombre FROM mascotas_razas ORDER BY nombre');
+    const [razasMascota] = await pool.query(
+      `SELECT mascotas_razas.id,
+              mascotas_razas.nombre,
+              mascotas_razas.especie_id,
+              mascotas_especies.nombre AS especie_nombre
+       FROM mascotas_razas
+       LEFT JOIN mascotas_especies ON mascotas_especies.id = mascotas_razas.especie_id
+       ORDER BY mascotas_especies.nombre, mascotas_razas.nombre`
+    );
     const selectedClienteId = req.query.cliente_id ? String(req.query.cliente_id) : '';
     let mascotaEditar = null;
     const showForm = Boolean(req.query.editar || req.query.nuevo);
@@ -165,10 +229,11 @@ app.post(
   '/mascotas',
   asyncHandler(async (req, res) => {
     const { nombre, especie, raza, fecha_nacimiento, cliente_id } = req.body;
+    const razaValidada = await validateBreedBySpecies(especie, raza);
     await pool.query(
       `INSERT INTO mascotas (nombre, especie, raza, fecha_nacimiento, cliente_id)
        VALUES (?, ?, ?, ?, ?)`,
-      [nombre, especie, raza, fecha_nacimiento || null, cliente_id]
+      [nombre, especie, razaValidada, fecha_nacimiento || null, cliente_id]
     );
     res.redirect('/mascotas');
   })
@@ -178,11 +243,12 @@ app.post(
   '/mascotas/:id',
   asyncHandler(async (req, res) => {
     const { nombre, especie, raza, fecha_nacimiento, cliente_id } = req.body;
+    const razaValidada = await validateBreedBySpecies(especie, raza);
     await pool.query(
       `UPDATE mascotas
        SET nombre = ?, especie = ?, raza = ?, fecha_nacimiento = ?, cliente_id = ?
        WHERE id = ?`,
-      [nombre, especie, raza, fecha_nacimiento || null, cliente_id, req.params.id]
+      [nombre, especie, razaValidada, fecha_nacimiento || null, cliente_id, req.params.id]
     );
     res.redirect('/mascotas');
   })
@@ -660,7 +726,15 @@ app.get(
     const [especiesMascota] = await pool.query(
       'SELECT id, nombre FROM mascotas_especies ORDER BY nombre'
     );
-    const [razasMascota] = await pool.query('SELECT id, nombre FROM mascotas_razas ORDER BY nombre');
+    const [razasMascota] = await pool.query(
+      `SELECT mascotas_razas.id,
+              mascotas_razas.nombre,
+              mascotas_razas.especie_id,
+              mascotas_especies.nombre AS especie_nombre
+       FROM mascotas_razas
+       LEFT JOIN mascotas_especies ON mascotas_especies.id = mascotas_razas.especie_id
+       ORDER BY mascotas_especies.nombre, mascotas_razas.nombre`
+    );
     res.render('mascotas-valores', { especiesMascota, razasMascota });
   })
 );
@@ -689,9 +763,12 @@ app.post(
 app.post(
   '/mascotas/raza',
   asyncHandler(async (req, res) => {
-    const { nombre } = req.body;
-    if (nombre && nombre.trim()) {
-      await pool.query('INSERT IGNORE INTO mascotas_razas (nombre) VALUES (?)', [nombre.trim()]);
+    const { nombre, especie_id } = req.body;
+    if (nombre && nombre.trim() && especie_id) {
+      await pool.query('INSERT IGNORE INTO mascotas_razas (nombre, especie_id) VALUES (?, ?)', [
+        nombre.trim(),
+        especie_id,
+      ]);
     }
     res.redirect('/mascotas/valores');
   })
@@ -761,6 +838,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor iniciado en http://localhost:${PORT}`);
+const startServer = async () => {
+  await ensureMascotasRazasHasEspecieRelation();
+  app.listen(PORT, () => {
+    console.log(`Servidor iniciado en http://localhost:${PORT}`);
+  });
+};
+
+startServer().catch((error) => {
+  console.error('No se pudo iniciar el servidor:', error);
+  process.exit(1);
 });

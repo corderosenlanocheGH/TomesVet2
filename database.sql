@@ -100,7 +100,10 @@ CREATE TABLE IF NOT EXISTS mascotas_especies (
 
 CREATE TABLE IF NOT EXISTS mascotas_razas (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(120) NOT NULL UNIQUE
+  nombre VARCHAR(120) NOT NULL,
+  especie_id INT NOT NULL,
+  CONSTRAINT fk_mascota_raza_especie FOREIGN KEY (especie_id) REFERENCES mascotas_especies(id),
+  CONSTRAINT uq_mascota_raza_especie UNIQUE (nombre, especie_id)
 );
 
 INSERT INTO clientes (nombre, telefono, email, direccion)
@@ -222,7 +225,7 @@ VALUES
   ('Perro'),
   ('Gato');
 
-INSERT INTO mascotas_razas (nombre)
+INSERT INTO mascotas_razas (nombre, especie_id)
 VALUES
-  ('Golden Retriever'),
-  ('Siamés');
+  ('Golden Retriever', (SELECT id FROM mascotas_especies WHERE nombre = 'Perro')),
+  ('Siamés', (SELECT id FROM mascotas_especies WHERE nombre = 'Gato'));

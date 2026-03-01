@@ -32,6 +32,8 @@ const formatDateInput = (value) => {
 };
 
 const TURNOS_ESTADOS = new Set(['Pendiente', 'Terminado', 'Cancelado']);
+const SEXOS_MASCOTA = new Set(['Macho', 'Hembra']);
+const TAMANIOS_MASCOTA = new Set(['Grande', 'Mediano', 'Pequeño']);
 
 const ensureMascotasRazasHasEspecieRelation = async () => {
   const [columns] = await pool.query(
@@ -63,6 +65,44 @@ const ensureMascotasRazasHasEspecieRelation = async () => {
        WHERE mr.especie_id IS NULL`
     );
   }
+};
+
+const ensureMascotasHasSexoAndTamanio = async () => {
+  const [columns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'mascotas'
+       AND COLUMN_NAME IN ('sexo', 'tamanio')`
+  );
+
+  const columnNames = new Set(columns.map((column) => column.COLUMN_NAME));
+
+  if (!columnNames.has('sexo')) {
+    await pool.query("ALTER TABLE mascotas ADD COLUMN sexo VARCHAR(20) NULL AFTER raza");
+  }
+
+  if (!columnNames.has('tamanio')) {
+    await pool.query(
+      "ALTER TABLE mascotas ADD COLUMN tamanio VARCHAR(20) NULL AFTER sexo"
+    );
+  }
+};
+
+const validateMascotaSexo = (sexo) => {
+  const sexoValue = (sexo || '').trim();
+  if (!sexoValue || !SEXOS_MASCOTA.has(sexoValue)) {
+    throw new Error('El sexo seleccionado no es válido');
+  }
+  return sexoValue;
+};
+
+const validateMascotaTamanio = (tamanio) => {
+  const tamanioValue = (tamanio || '').trim();
+  if (!tamanioValue || !TAMANIOS_MASCOTA.has(tamanioValue)) {
+    throw new Error('El tamaño seleccionado no es válido');
+  }
+  return tamanioValue;
 };
 
 const validateBreedBySpecies = async (especie, raza) => {
@@ -228,12 +268,22 @@ app.get(
 app.post(
   '/mascotas',
   asyncHandler(async (req, res) => {
-    const { nombre, especie, raza, fecha_nacimiento, cliente_id } = req.body;
+    const { nombre, especie, raza, sexo, tamanio, fecha_nacimiento, cliente_id } = req.body;
     const razaValidada = await validateBreedBySpecies(especie, raza);
+    const sexoValidado = validateMascotaSexo(sexo);
+    const tamanioValidado = validateMascotaTamanio(tamanio);
     await pool.query(
-      `INSERT INTO mascotas (nombre, especie, raza, fecha_nacimiento, cliente_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [nombre, especie, razaValidada, fecha_nacimiento || null, cliente_id]
+      `INSERT INTO mascotas (nombre, especie, raza, sexo, tamanio, fecha_nacimiento, cliente_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        nombre,
+        especie,
+        razaValidada,
+        sexoValidado,
+        tamanioValidado,
+        fecha_nacimiento || null,
+        cliente_id,
+      ]
     );
     res.redirect('/mascotas');
   })
@@ -242,13 +292,24 @@ app.post(
 app.post(
   '/mascotas/:id(\\d+)',
   asyncHandler(async (req, res) => {
-    const { nombre, especie, raza, fecha_nacimiento, cliente_id } = req.body;
+    const { nombre, especie, raza, sexo, tamanio, fecha_nacimiento, cliente_id } = req.body;
     const razaValidada = await validateBreedBySpecies(especie, raza);
+    const sexoValidado = validateMascotaSexo(sexo);
+    const tamanioValidado = validateMascotaTamanio(tamanio);
     await pool.query(
       `UPDATE mascotas
-       SET nombre = ?, especie = ?, raza = ?, fecha_nacimiento = ?, cliente_id = ?
+       SET nombre = ?, especie = ?, raza = ?, sexo = ?, tamanio = ?, fecha_nacimiento = ?, cliente_id = ?
        WHERE id = ?`,
-      [nombre, especie, razaValidada, fecha_nacimiento || null, cliente_id, req.params.id]
+      [
+        nombre,
+        especie,
+        razaValidada,
+        sexoValidado,
+        tamanioValidado,
+        fecha_nacimiento || null,
+        cliente_id,
+        req.params.id,
+      ]
     );
     res.redirect('/mascotas');
   })
@@ -853,6 +914,7 @@ app.use((err, req, res, next) => {
 
 const startServer = async () => {
   await ensureMascotasRazasHasEspecieRelation();
+  await ensureMascotasHasSexoAndTamanio();
   app.listen(PORT, () => {
     console.log(`Servidor iniciado en http://localhost:${PORT}`);
   });

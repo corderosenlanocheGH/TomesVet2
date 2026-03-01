@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   diagnostico_definitivo TEXT,
   analisis_solicitados TEXT,
   tratamiento TEXT,
+  otros_datos TEXT,
   CONSTRAINT fk_historia_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
 );
 
@@ -142,7 +143,8 @@ INSERT INTO historia_clinica (
   diagnostico_diferencial,
   diagnostico_definitivo,
   analisis_solicitados,
-  tratamiento
+  tratamiento,
+  otros_datos
 )
 VALUES
   (
@@ -164,7 +166,8 @@ VALUES
     'Control parasitario pendiente',
     'Paciente estable',
     'No requiere',
-    'Reposo 24 horas'
+    'Reposo 24 horas',
+    'Sin antecedentes relevantes'
   ),
   (
     2,
@@ -185,7 +188,8 @@ VALUES
     'Intolerancia alimentaria',
     'Gastritis leve',
     'Hemograma',
-    'Continuar dieta balanceada'
+    'Continuar dieta balanceada',
+    'Control en 7 días'
   );
 
 INSERT INTO vacunas_tipos (nombre)

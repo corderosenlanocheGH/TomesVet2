@@ -64,6 +64,10 @@
     <table class="table table-bordered align-middle mb-0">
       <tbody>
         <tr><th style="width: 30%">Mascota</th><td><%= historia.mascota_nombre %></td></tr>
+        <tr><th>Especie</th><td><%= showValue(historia.mascota_especie) %></td></tr>
+        <tr><th>Raza</th><td><%= showValue(historia.mascota_raza) %></td></tr>
+        <tr><th>Sexo</th><td><%= showValue(historia.mascota_sexo) %></td></tr>
+        <tr><th>Tamaño</th><td><%= showValue(historia.mascota_tamanio) %></td></tr>
         <tr><th>Fecha</th><td><%= formatShortDate(historia.fecha) %></td></tr>
         <tr><th>Motivo</th><td><%= showValue(historia.motivo) %></td></tr>
         <tr><th>Aspecto general</th><td><%= showValue(historia.aspecto_general) %></td></tr>

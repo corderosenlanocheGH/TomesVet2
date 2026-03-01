@@ -93,6 +93,16 @@ CREATE TABLE IF NOT EXISTS motivos_turno (
   nombre VARCHAR(120) NOT NULL UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS mascotas_especies (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS mascotas_razas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL UNIQUE
+);
+
 INSERT INTO clientes (nombre, telefono, email, direccion)
 VALUES
   ('Carolina López', '555-1234', 'carolina@example.com', 'Av. Siempre Viva 123'),
@@ -206,3 +216,13 @@ VALUES
   ('Vacunación'),
   ('Control postoperatorio'),
   ('Urgencia');
+
+INSERT INTO mascotas_especies (nombre)
+VALUES
+  ('Perro'),
+  ('Gato');
+
+INSERT INTO mascotas_razas (nombre)
+VALUES
+  ('Golden Retriever'),
+  ('Siamés');

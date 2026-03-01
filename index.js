@@ -89,6 +89,20 @@ const ensureMascotasHasSexoAndTamanio = async () => {
   }
 };
 
+const ensureHistoriaClinicaHasOtrosDatos = async () => {
+  const [columns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'historia_clinica'
+       AND COLUMN_NAME = 'otros_datos'`
+  );
+
+  if (!columns.length) {
+    await pool.query('ALTER TABLE historia_clinica ADD COLUMN otros_datos TEXT NULL AFTER tratamiento');
+  }
+};
+
 const validateMascotaSexo = (sexo) => {
   const sexoValue = (sexo || '').trim();
   if (!sexoValue || !SEXOS_MASCOTA.has(sexoValue)) {
@@ -458,6 +472,7 @@ app.post(
       diagnostico_definitivo,
       analisis_solicitados,
       tratamiento,
+      otros_datos,
     } = req.body;
     await pool.query(
       `INSERT INTO historia_clinica (
@@ -479,8 +494,9 @@ app.post(
         diagnostico_diferencial,
         diagnostico_definitivo,
         analisis_solicitados,
-        tratamiento
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        tratamiento,
+        otros_datos
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         mascota_id,
         fecha,
@@ -501,6 +517,7 @@ app.post(
         diagnostico_definitivo || null,
         analisis_solicitados || null,
         tratamiento || null,
+        otros_datos || null,
       ]
     );
     res.redirect('/historia-clinica');
@@ -927,6 +944,7 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   await ensureMascotasRazasHasEspecieRelation();
   await ensureMascotasHasSexoAndTamanio();
+  await ensureHistoriaClinicaHasOtrosDatos();
   app.listen(PORT, () => {
     console.log(`Servidor iniciado en http://localhost:${PORT}`);
   });

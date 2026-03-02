@@ -1,0 +1,96 @@
+<%- include('partials/head', { title: 'Próximas vacunas | TomesVet' }) %>
+<%
+  const formatShortDate = (value = '') => {
+    if (!value) return '';
+    const normalized = value.toString().split('T')[0];
+    const [year, month, day] = normalized.split('-');
+    if (year && month && day) {
+      return `${day}/${month}/${year}`;
+    }
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString('es-AR');
+    }
+    return value;
+  };
+
+  const sanitizePhoneForWhatsapp = (rawPhone = '') =>
+    rawPhone
+      .toString()
+      .trim()
+      .replace(/[^\d]/g, '');
+%>
+<%- include('partials/nav') %>
+
+<main class="content-area">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+          <h4 class="card-title mb-1">Próximas vacunas (30 días)</h4>
+          <p class="text-muted mb-0">
+            Mascotas con fecha de próxima vacuna dentro de un mes.
+          </p>
+        </div>
+        <a class="btn btn-outline-primary" href="/vacunas">Ver historial de vacunas</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>Fecha próxima</th>
+              <th>Mascota</th>
+              <th>Cliente</th>
+              <th>Vacuna</th>
+              <th>Teléfono</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (!recordatorios.length) { %>
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  No hay próximas vacunas dentro de los próximos 30 días.
+                </td>
+              </tr>
+            <% } %>
+
+            <% recordatorios.forEach((recordatorio) => {
+              const phoneSanitized = sanitizePhoneForWhatsapp(recordatorio.cliente_telefono);
+              const whatsappMessage = encodeURIComponent(`Hola ${recordatorio.cliente_nombre}, te recordamos la próxima vacuna de ${recordatorio.mascota_nombre} (${recordatorio.nombre_comercial} - ${recordatorio.tipo}) para el día ${formatShortDate(recordatorio.proxima_fecha_aplicacion)}.`);
+              const whatsappUrl = phoneSanitized
+                ? `https://wa.me/${phoneSanitized}?text=${whatsappMessage}`
+                : '';
+            %>
+              <tr>
+                <td><%= formatShortDate(recordatorio.proxima_fecha_aplicacion) %></td>
+                <td><%= recordatorio.mascota_nombre %></td>
+                <td><%= recordatorio.cliente_nombre %></td>
+                <td><%= recordatorio.nombre_comercial %> · <%= recordatorio.tipo %></td>
+                <td><%= recordatorio.cliente_telefono || '-' %></td>
+                <td class="text-end">
+                  <% if (whatsappUrl) { %>
+                    <a
+                      class="btn btn-sm btn-success"
+                      href="<%= whatsappUrl %>"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <i class="bi bi-whatsapp"></i>
+                      Enviar WhatsApp
+                    </a>
+                  <% } else { %>
+                    <span class="text-muted small">Sin número válido</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('partials/footer') %>

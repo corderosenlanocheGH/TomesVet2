@@ -1010,6 +1010,32 @@ app.get(
   })
 );
 
+app.get(
+  '/vacunas/proximas',
+  asyncHandler(async (req, res) => {
+    const [recordatorios] = await pool.query(
+      `SELECT vacunas.id,
+              vacunas.proxima_fecha_aplicacion,
+              vacunas_tipos.nombre AS tipo,
+              vacunas_nombres_comerciales.nombre AS nombre_comercial,
+              mascotas.nombre AS mascota_nombre,
+              clientes.nombre AS cliente_nombre,
+              clientes.telefono AS cliente_telefono
+       FROM vacunas
+       JOIN mascotas ON mascotas.id = vacunas.mascota_id
+       JOIN clientes ON clientes.id = mascotas.cliente_id
+       JOIN vacunas_tipos ON vacunas_tipos.id = vacunas.tipo_id
+       JOIN vacunas_nombres_comerciales
+         ON vacunas_nombres_comerciales.id = vacunas.nombre_comercial_id
+       WHERE vacunas.proxima_fecha_aplicacion IS NOT NULL
+         AND vacunas.proxima_fecha_aplicacion BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 1 MONTH)
+       ORDER BY vacunas.proxima_fecha_aplicacion ASC, mascotas.nombre ASC`
+    );
+
+    res.render('vacunas-proximas', { recordatorios });
+  })
+);
+
 app.post(
   '/vacunas',
   asyncHandler(async (req, res) => {

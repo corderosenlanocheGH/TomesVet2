@@ -16,6 +16,12 @@
         padding-bottom: 1rem;
       }
 
+      .clinic-logo {
+        max-height: 70px;
+        max-width: 180px;
+        width: auto;
+      }
+
       @media print {
         .no-print {
           display: none !important;
@@ -46,10 +52,19 @@
       const showValue = (value) => value || '-';
     %>
 
-    <div class="d-flex justify-content-between align-items-start header">
+    <div class="d-flex justify-content-between align-items-start header gap-3">
       <div>
+        <% if (configuracionClinica.logo_ruta) { %>
+          <img src="<%= configuracionClinica.logo_ruta %>" alt="Logo veterinaria" class="clinic-logo mb-2" />
+        <% } %>
         <h3 class="mb-1">Historia clínica</h3>
-        <p class="text-muted mb-0">TomesVet</p>
+        <p class="text-muted mb-0"><%= configuracionClinica.veterinaria_nombre || 'TomesVet' %></p>
+        <% if (configuracionClinica.medica_nombre) { %>
+          <p class="text-muted mb-0">Médica: <%= configuracionClinica.medica_nombre %></p>
+        <% } %>
+        <% if (configuracionClinica.medica_matricula) { %>
+          <p class="text-muted mb-0">Matrícula: <%= configuracionClinica.medica_matricula %></p>
+        <% } %>
       </div>
       <div class="text-end">
         <p class="mb-0"><strong>N°:</strong> <%= historia.id %></p>

@@ -6,6 +6,68 @@
     <div class="col-lg-4">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
+          <h4 class="card-title mb-3">Datos de la veterinaria</h4>
+          <p class="text-muted mb-3">
+            Configura el logo y los datos que se muestran en la impresión de la historia clínica.
+          </p>
+          <form action="/configuracion/clinica" method="POST" class="d-grid gap-3" id="configuracion-clinica-form">
+            <div>
+              <label class="form-label" for="veterinaria-nombre">Nombre de la veterinaria</label>
+              <input
+                class="form-control"
+                id="veterinaria-nombre"
+                type="text"
+                name="veterinaria_nombre"
+                value="<%= configuracionClinica.veterinaria_nombre || '' %>"
+                maxlength="255"
+              />
+            </div>
+            <div>
+              <label class="form-label" for="medica-nombre">Nombre de la médica</label>
+              <input
+                class="form-control"
+                id="medica-nombre"
+                type="text"
+                name="medica_nombre"
+                value="<%= configuracionClinica.medica_nombre || '' %>"
+                maxlength="255"
+              />
+            </div>
+            <div>
+              <label class="form-label" for="medica-matricula">Matrícula</label>
+              <input
+                class="form-control"
+                id="medica-matricula"
+                type="text"
+                name="medica_matricula"
+                value="<%= configuracionClinica.medica_matricula || '' %>"
+                maxlength="120"
+              />
+            </div>
+            <div>
+              <label class="form-label" for="logo-jpeg">Logo (JPEG)</label>
+              <input class="form-control" id="logo-jpeg" type="file" accept="image/jpeg,.jpg,.jpeg" />
+              <div class="form-text">Solo se permite formato .jpg o .jpeg.</div>
+              <% if (configuracionClinica.logo_ruta) { %>
+                <img
+                  src="<%= configuracionClinica.logo_ruta %>"
+                  alt="Logo de la veterinaria"
+                  class="img-fluid rounded border mt-2"
+                  style="max-height: 120px"
+                />
+              <% } %>
+            </div>
+            <input type="hidden" name="logo_nombre" id="logo-nombre" />
+            <input type="hidden" name="logo_base64" id="logo-base64" />
+            <input type="hidden" name="logo_actual" value="<%= configuracionClinica.logo_ruta || '' %>" />
+            <button class="btn btn-primary" type="submit">Guardar datos</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
           <h4 class="card-title mb-3">Motivos de turnos</h4>
           <p class="text-muted mb-3">
             Centraliza los motivos disponibles para las reservas y mantén las opciones actualizadas.
@@ -57,5 +119,39 @@
     </div>
   </div>
 </main>
+
+<script>
+  const logoInput = document.getElementById('logo-jpeg');
+  const logoNombreInput = document.getElementById('logo-nombre');
+  const logoBase64Input = document.getElementById('logo-base64');
+
+  logoInput?.addEventListener('change', () => {
+    const [file] = logoInput.files || [];
+    if (!file) {
+      logoNombreInput.value = '';
+      logoBase64Input.value = '';
+      return;
+    }
+
+    const lowerName = file.name.toLowerCase();
+    const isJpeg =
+      file.type === 'image/jpeg' || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg');
+
+    if (!isJpeg) {
+      alert('Solo se permite subir archivos JPEG (.jpg o .jpeg).');
+      logoInput.value = '';
+      logoNombreInput.value = '';
+      logoBase64Input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      logoNombreInput.value = file.name;
+      logoBase64Input.value = typeof reader.result === 'string' ? reader.result : '';
+    };
+    reader.readAsDataURL(file);
+  });
+</script>
 
 <%- include('partials/footer') %>

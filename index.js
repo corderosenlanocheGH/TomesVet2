@@ -37,8 +37,81 @@ const TURNOS_ESTADOS = new Set(['Pendiente', 'Terminado', 'Cancelado']);
 const SEXOS_MASCOTA = new Set(['Macho', 'Hembra']);
 const TAMANIOS_MASCOTA = new Set(['Grande', 'Mediano', 'Pequeño']);
 const HISTORIA_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'historia-clinica');
+const CONFIG_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'configuracion');
 
 const getFieldValue = (field) => (Array.isArray(field) ? field[0] : field);
+
+const ensureConfiguracionClinicaTable = async () => {
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS configuracion_clinica (
+      id INT PRIMARY KEY,
+      veterinaria_nombre VARCHAR(255) NULL,
+      medica_nombre VARCHAR(255) NULL,
+      medica_matricula VARCHAR(120) NULL,
+      logo_ruta VARCHAR(255) NULL,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`
+  );
+
+  await pool.query(
+    `INSERT INTO configuracion_clinica (id)
+     SELECT 1
+     FROM DUAL
+     WHERE NOT EXISTS (SELECT 1 FROM configuracion_clinica WHERE id = 1)`
+  );
+};
+
+const getConfiguracionClinica = async () => {
+  const [rows] = await pool.query(
+    `SELECT veterinaria_nombre, medica_nombre, medica_matricula, logo_ruta
+     FROM configuracion_clinica
+     WHERE id = 1
+     LIMIT 1`
+  );
+
+  if (!rows.length) {
+    return {
+      veterinaria_nombre: '',
+      medica_nombre: '',
+      medica_matricula: '',
+      logo_ruta: '',
+    };
+  }
+
+  return rows[0];
+};
+
+const extractJpegLogoFromBody = (body) => {
+  const originalName = (body.logo_nombre || '').trim();
+  const jpegBase64Value = body.logo_base64 || '';
+
+  if (!jpegBase64Value) {
+    return null;
+  }
+
+  const normalizedName = originalName.toLowerCase();
+  const hasJpegExtension =
+    normalizedName.endsWith('.jpg') || normalizedName.endsWith('.jpeg');
+  const hasJpegPrefix =
+    jpegBase64Value.startsWith('data:image/jpeg;base64,') ||
+    jpegBase64Value.startsWith('data:image/jpg;base64,');
+
+  if (!hasJpegExtension || !hasJpegPrefix) {
+    throw new Error('El logo debe ser una imagen JPEG (.jpg o .jpeg).');
+  }
+
+  const base64Data = jpegBase64Value.replace(/^data:image\/(jpeg|jpg);base64,/, '');
+  return {
+    imageBuffer: Buffer.from(base64Data, 'base64'),
+  };
+};
+
+const saveJpegLogo = async ({ imageBuffer }) => {
+  const uniqueFileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.jpeg`;
+  const targetFilePath = path.join(CONFIG_UPLOAD_DIR, uniqueFileName);
+  await fs.writeFile(targetFilePath, imageBuffer);
+  return `/uploads/configuracion/${uniqueFileName}`;
+};
 
 const ensureMascotasRazasHasEspecieRelation = async () => {
   const [columns] = await pool.query(
@@ -662,7 +735,11 @@ app.get(
       });
     }
 
-    return res.render('historia-detalle-print', { historia: historias[0] });
+    const configuracionClinica = await getConfiguracionClinica();
+    return res.render('historia-detalle-print', {
+      historia: historias[0],
+      configuracionClinica,
+    });
   })
 );
 
@@ -1087,7 +1164,41 @@ app.post(
 app.get(
   '/configuracion',
   asyncHandler(async (req, res) => {
-    res.render('configuracion');
+    const configuracionClinica = await getConfiguracionClinica();
+    res.render('configuracion', { configuracionClinica });
+  })
+);
+
+app.post(
+  '/configuracion/clinica',
+  asyncHandler(async (req, res) => {
+    const veterinariaNombre = (req.body.veterinaria_nombre || '').trim();
+    const medicaNombre = (req.body.medica_nombre || '').trim();
+    const medicaMatricula = (req.body.medica_matricula || '').trim();
+
+    let logoRuta = req.body.logo_actual || null;
+    const logoAdjunto = extractJpegLogoFromBody(req.body);
+
+    if (logoAdjunto) {
+      logoRuta = await saveJpegLogo(logoAdjunto);
+    }
+
+    await pool.query(
+      `UPDATE configuracion_clinica
+       SET veterinaria_nombre = ?,
+           medica_nombre = ?,
+           medica_matricula = ?,
+           logo_ruta = ?
+       WHERE id = 1`,
+      [
+        veterinariaNombre || null,
+        medicaNombre || null,
+        medicaMatricula || null,
+        logoRuta,
+      ]
+    );
+
+    res.redirect('/configuracion');
   })
 );
 
@@ -1234,12 +1345,14 @@ app.use((err, req, res, next) => {
 
 const startServer = async () => {
   await fs.mkdir(HISTORIA_UPLOAD_DIR, { recursive: true });
+  await fs.mkdir(CONFIG_UPLOAD_DIR, { recursive: true });
   await ensureMascotasRazasHasEspecieRelation();
   await ensureMascotasHasSexoAndTamanio();
   await ensureMascotasHasColorAndSenasParticulares();
   await ensureHistoriaClinicaHasOtrosDatos();
   await ensureHistoriaClinicaHasDocumentoAdjunto();
   await ensureHistoriaClinicaDocumentosTable();
+  await ensureConfiguracionClinicaTable();
   app.listen(PORT, () => {
     console.log(`Servidor iniciado en http://localhost:${PORT}`);
   });

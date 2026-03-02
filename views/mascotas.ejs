@@ -129,6 +129,19 @@
                 </select>
               </div>
               <div>
+                <label class="form-label">Color</label>
+                <input
+                  class="form-control"
+                  type="text"
+                  name="color"
+                  value="<%= mascotaEditar ? (mascotaEditar.color || '') : '' %>"
+                />
+              </div>
+              <div>
+                <label class="form-label">Señas particulares</label>
+                <textarea class="form-control" name="senias_particulares" rows="2"><%= mascotaEditar ? (mascotaEditar.senias_particulares || '') : '' %></textarea>
+              </div>
+              <div>
                 <label class="form-label">Fecha de nacimiento</label>
                 <input
                   class="form-control"
@@ -208,6 +221,8 @@
                   <th>Raza</th>
                   <th>Sexo</th>
                   <th>Tamaño</th>
+                  <th>Color</th>
+                  <th>Señas particulares</th>
                   <th>Fecha nacimiento</th>
                   <th>Cliente</th>
                   <th></th>
@@ -221,6 +236,8 @@
                     <td><%= mascota.raza || '-' %></td>
                     <td><%= mascota.sexo || '-' %></td>
                     <td><%= mascota.tamanio || '-' %></td>
+                    <td><%= mascota.color || '-' %></td>
+                    <td><%= mascota.senias_particulares || '-' %></td>
                     <td><%= formatShortDate(mascota.fecha_nacimiento) || '-' %></td>
                     <td>
                       <a class="link-secondary text-decoration-none" href="/clientes?mascota_id=<%= mascota.id %>">

@@ -94,6 +94,28 @@ const ensureMascotasHasSexoAndTamanio = async () => {
   }
 };
 
+const ensureMascotasHasColorAndSenasParticulares = async () => {
+  const [columns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'mascotas'
+       AND COLUMN_NAME IN ('color', 'senias_particulares')`
+  );
+
+  const columnNames = new Set(columns.map((column) => column.COLUMN_NAME));
+
+  if (!columnNames.has('color')) {
+    await pool.query("ALTER TABLE mascotas ADD COLUMN color VARCHAR(120) NULL AFTER tamanio");
+  }
+
+  if (!columnNames.has('senias_particulares')) {
+    await pool.query(
+      'ALTER TABLE mascotas ADD COLUMN senias_particulares TEXT NULL AFTER color'
+    );
+  }
+};
+
 const ensureHistoriaClinicaHasOtrosDatos = async () => {
   const [columns] = await pool.query(
     `SELECT COLUMN_NAME
@@ -425,19 +447,41 @@ app.get(
 app.post(
   '/mascotas',
   asyncHandler(async (req, res) => {
-    const { nombre, especie, raza, sexo, tamanio, fecha_nacimiento, cliente_id } = req.body;
+    const {
+      nombre,
+      especie,
+      raza,
+      sexo,
+      tamanio,
+      color,
+      senias_particulares,
+      fecha_nacimiento,
+      cliente_id,
+    } = req.body;
     const razaValidada = await validateBreedBySpecies(especie, raza);
     const sexoValidado = validateMascotaSexo(sexo);
     const tamanioValidado = validateMascotaTamanio(tamanio);
     await pool.query(
-      `INSERT INTO mascotas (nombre, especie, raza, sexo, tamanio, fecha_nacimiento, cliente_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO mascotas (
+        nombre,
+        especie,
+        raza,
+        sexo,
+        tamanio,
+        color,
+        senias_particulares,
+        fecha_nacimiento,
+        cliente_id
+      )
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         nombre,
         especie,
         razaValidada,
         sexoValidado,
         tamanioValidado,
+        (color || '').trim() || null,
+        (senias_particulares || '').trim() || null,
         fecha_nacimiento || null,
         cliente_id,
       ]
@@ -449,13 +493,31 @@ app.post(
 app.post(
   '/mascotas/:id(\\d+)',
   asyncHandler(async (req, res) => {
-    const { nombre, especie, raza, sexo, tamanio, fecha_nacimiento, cliente_id } = req.body;
+    const {
+      nombre,
+      especie,
+      raza,
+      sexo,
+      tamanio,
+      color,
+      senias_particulares,
+      fecha_nacimiento,
+      cliente_id,
+    } = req.body;
     const razaValidada = await validateBreedBySpecies(especie, raza);
     const sexoValidado = validateMascotaSexo(sexo);
     const tamanioValidado = validateMascotaTamanio(tamanio);
     await pool.query(
       `UPDATE mascotas
-       SET nombre = ?, especie = ?, raza = ?, sexo = ?, tamanio = ?, fecha_nacimiento = ?, cliente_id = ?
+       SET nombre = ?,
+           especie = ?,
+           raza = ?,
+           sexo = ?,
+           tamanio = ?,
+           color = ?,
+           senias_particulares = ?,
+           fecha_nacimiento = ?,
+           cliente_id = ?
        WHERE id = ?`,
       [
         nombre,
@@ -463,6 +525,8 @@ app.post(
         razaValidada,
         sexoValidado,
         tamanioValidado,
+        (color || '').trim() || null,
+        (senias_particulares || '').trim() || null,
         fecha_nacimiento || null,
         cliente_id,
         req.params.id,
@@ -1172,6 +1236,7 @@ const startServer = async () => {
   await fs.mkdir(HISTORIA_UPLOAD_DIR, { recursive: true });
   await ensureMascotasRazasHasEspecieRelation();
   await ensureMascotasHasSexoAndTamanio();
+  await ensureMascotasHasColorAndSenasParticulares();
   await ensureHistoriaClinicaHasOtrosDatos();
   await ensureHistoriaClinicaHasDocumentoAdjunto();
   await ensureHistoriaClinicaDocumentosTable();

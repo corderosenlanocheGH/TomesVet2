@@ -14,7 +14,21 @@
     return value;
   };
 
-  const currentDate = new Date().toISOString().split('T')[0];
+  const toDateInputValue = (value = '') => {
+    if (!value) return '';
+    const normalized = value.toString().match(/^\d{4}-\d{2}-\d{2}/);
+    if (normalized) return normalized[0];
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '';
+
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const currentDate = toDateInputValue(new Date());
 %>
 <%- include('partials/nav') %>
 
@@ -268,7 +282,7 @@
                 <% historias.forEach((historia) => { %>
                   <tr
                     data-mascota-id="<%= historia.mascota_id %>"
-                    data-fecha="<%= historia.fecha ? historia.fecha.toString().split('T')[0] : '' %>"
+                    data-fecha="<%= toDateInputValue(historia.fecha) %>"
                   >
                     <td>
                       <a href="/historia-clinica/<%= historia.id %>">

@@ -33,6 +33,13 @@
     }
     return value;
   };
+
+  const sanitizePhoneForWhatsapp = (rawPhone = '') =>
+    rawPhone
+      .toString()
+      .trim()
+      .replace(/[^\d]/g, '')
+      .replace(/^0+/, '');
 %>
 <%- include('partials/nav') %>
 
@@ -129,10 +136,17 @@
                   <th>Hora</th>
                   <th>Motivo</th>
                   <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody id="turnos-body">
-                <% turnos.forEach((turno) => { %>
+                <% turnos.forEach((turno) => {
+                  const phoneSanitized = sanitizePhoneForWhatsapp(turno.cliente_telefono);
+                  const whatsappMessage = encodeURIComponent(`Hola, ${turno.mascota_nombre} ya esta listo`);
+                  const whatsappUrl = phoneSanitized
+                    ? `https://wa.me/${phoneSanitized}?text=${whatsappMessage}`
+                    : '';
+                %>
                   <tr data-estado="<%= turno.estado %>" data-status-slug="<%= getStatusSlug(turno.estado) %>">
                     <td><%= turno.cliente_nombre %></td>
                     <td><%= turno.mascota_nombre %></td>
@@ -163,6 +177,21 @@
                           <% }) %>
                         </div>
                       </form>
+                    </td>
+                    <td>
+                      <% if (whatsappUrl) { %>
+                        <a
+                          class="btn btn-sm btn-success"
+                          href="<%= whatsappUrl %>"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <i class="bi bi-whatsapp"></i>
+                          Enviar WhatsApp
+                        </a>
+                      <% } else { %>
+                        <span class="text-muted small">Sin número válido</span>
+                      <% } %>
                     </td>
                   </tr>
                 <% }) %>

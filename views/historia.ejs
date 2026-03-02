@@ -14,7 +14,21 @@
     return value;
   };
 
-  const currentDate = new Date().toISOString().split('T')[0];
+  const toDateInputValue = (value = '') => {
+    if (!value) return '';
+    const normalized = value.toString().match(/^\d{4}-\d{2}-\d{2}/);
+    if (normalized) return normalized[0];
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '';
+
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const currentDate = toDateInputValue(new Date());
 %>
 <%- include('partials/nav') %>
 
@@ -268,7 +282,7 @@
                 <% historias.forEach((historia) => { %>
                   <tr
                     data-mascota-id="<%= historia.mascota_id %>"
-                    data-fecha="<%= historia.fecha ? historia.fecha.toString().split('T')[0] : '' %>"
+                    data-fecha="<%= toDateInputValue(historia.fecha) %>"
                   >
                     <td>
                       <a href="/historia-clinica/<%= historia.id %>">
@@ -319,12 +333,28 @@
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
 
-  const parseDate = (value) => {
+  const parseDate = (value, endOfDay = false) => {
     if (!value) return null;
+
+    const normalized = value.toString().split('T')[0];
+    const parts = normalized.split('-').map(Number);
+    if (parts.length === 3 && parts.every((part) => !Number.isNaN(part))) {
+      const [year, month, day] = parts;
+      const parsed = new Date(year, month - 1, day, endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {
       return null;
     }
+
+    if (endOfDay) {
+      parsed.setHours(23, 59, 59, 999);
+    }
+
     return parsed;
   };
 
@@ -349,7 +379,7 @@
     const query = normalizeText(buscarHistoria.value);
     const mascotaId = mascotaFilter.value;
     const desde = parseDate(fechaDesde.value);
-    const hasta = parseDate(fechaHasta.value);
+    const hasta = parseDate(fechaHasta.value, true);
 
     historiaRows.forEach((row) => {
       const rowText = normalizeText(row.textContent);

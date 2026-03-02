@@ -82,6 +82,11 @@ body {
   font-weight: 700;
 }
 
+.sidebar-avatar-image {
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+}
+
 .sidebar-name {
   margin: 0;
   font-weight: 600;

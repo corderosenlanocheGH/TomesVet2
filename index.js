@@ -81,6 +81,13 @@ const getConfiguracionClinica = async () => {
   return rows[0];
 };
 
+app.use(
+  asyncHandler(async (req, res, next) => {
+    res.locals.configuracionClinica = await getConfiguracionClinica();
+    next();
+  })
+);
+
 const extractJpegLogoFromBody = (body) => {
   const originalName = (body.logo_nombre || '').trim();
   const jpegBase64Value = body.logo_base64 || '';

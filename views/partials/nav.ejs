@@ -1,16 +1,36 @@
 <div class="app-shell">
+  <% const clinic = configuracionClinica || {}; %>
+  <% const veterinariaNombre = clinic.veterinaria_nombre || 'TomesVet'; %>
+  <% const medicaNombre = clinic.medica_nombre || ''; %>
+  <% const medicaMatricula = clinic.medica_matricula || ''; %>
+  <% const logoRuta = clinic.logo_ruta || ''; %>
+  <% const brandInitials = veterinariaNombre
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase())
+    .join('') || 'TV'; %>
   <aside class="sidebar">
     <div class="sidebar-header">
-      <span class="sidebar-brand">TomesVet</span>
+      <span class="sidebar-brand"><%= veterinariaNombre %></span>
       <button class="sidebar-toggle" type="button" aria-label="Mostrar menú">
         <i class="bi bi-list"></i>
       </button>
     </div>
     <div class="sidebar-user">
-      <div class="sidebar-avatar">TV</div>
+      <% if (logoRuta) { %>
+        <img class="sidebar-avatar sidebar-avatar-image" src="<%= logoRuta %>" alt="Logo de <%= veterinariaNombre %>" />
+      <% } else { %>
+        <div class="sidebar-avatar"><%= brandInitials %></div>
+      <% } %>
       <div>
-        <p class="sidebar-name">Clínica TomesVet</p>
-        <span class="sidebar-role">Panel administrativo</span>
+        <p class="sidebar-name"><%= veterinariaNombre %></p>
+        <% if (medicaNombre) { %>
+          <span class="sidebar-role d-block">Médica: <%= medicaNombre %></span>
+        <% } %>
+        <% if (medicaMatricula) { %>
+          <span class="sidebar-role d-block">Matrícula: <%= medicaMatricula %></span>
+        <% } %>
       </div>
     </div>
     <nav class="sidebar-nav">

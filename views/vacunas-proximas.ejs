@@ -44,13 +44,14 @@
               <th>Cliente</th>
               <th>Vacuna</th>
               <th>Teléfono</th>
+              <th>Enviado</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             <% if (!recordatorios.length) { %>
               <tr>
-                <td colspan="6" class="text-center text-muted py-4">
+                <td colspan="7" class="text-center text-muted py-4">
                   No hay próximas vacunas dentro de los próximos 30 días.
                 </td>
               </tr>
@@ -69,10 +70,29 @@
                 <td><%= recordatorio.cliente_nombre %></td>
                 <td><%= recordatorio.nombre_comercial %> · <%= recordatorio.tipo %></td>
                 <td><%= recordatorio.cliente_telefono || '-' %></td>
+                <td>
+                  <form
+                    action="/vacunas/<%= recordatorio.id %>/recordatorio-whatsapp"
+                    method="POST"
+                    class="d-inline-flex align-items-center"
+                  >
+                    <input
+                      type="hidden"
+                      name="recordatorio_whatsapp_enviado"
+                      value="<%= recordatorio.recordatorio_whatsapp_enviado ? '1' : '0' %>"
+                    />
+                    <input
+                      class="form-check-input reminder-checkbox"
+                      type="checkbox"
+                      aria-label="Recordatorio WhatsApp enviado"
+                      <%= recordatorio.recordatorio_whatsapp_enviado ? 'checked' : '' %>
+                    />
+                  </form>
+                </td>
                 <td class="text-end">
                   <% if (whatsappUrl) { %>
                     <a
-                      class="btn btn-sm btn-success"
+                      class="btn btn-sm btn-success whatsapp-send-btn"
                       href="<%= whatsappUrl %>"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -94,3 +114,30 @@
 </main>
 
 <%- include('partials/footer') %>
+
+<script>
+  document.querySelectorAll('.reminder-checkbox').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+      const form = checkbox.closest('form');
+      const hiddenInput = form.querySelector('input[name="recordatorio_whatsapp_enviado"]');
+      hiddenInput.value = checkbox.checked ? '1' : '0';
+      form.submit();
+    });
+  });
+
+  document.querySelectorAll('.whatsapp-send-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      const row = button.closest('tr');
+      const checkbox = row.querySelector('.reminder-checkbox');
+      if (!checkbox || checkbox.checked) {
+        return;
+      }
+
+      const form = checkbox.closest('form');
+      const hiddenInput = form.querySelector('input[name="recordatorio_whatsapp_enviado"]');
+      checkbox.checked = true;
+      hiddenInput.value = '1';
+      form.submit();
+    });
+  });
+</script>

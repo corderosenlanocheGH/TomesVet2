@@ -31,3 +31,32 @@ Aplicación web para gestión veterinaria con Node.js, MySQL y Bootstrap. Incluy
 - `index.js`: servidor Express y rutas.
 - `views/`: vistas con Bootstrap.
 - `database.sql`: esquema y datos de ejemplo.
+
+## Solución de problemas
+
+### Error: `Cannot find module 'express/node_modules/formidable'`
+
+Ese `require` ya no se usa en las versiones actuales del proyecto. Si ves ese error,
+normalmente estás ejecutando una copia vieja o un proceso Node/Nodemon que quedó levantado.
+
+1. Verifica que tu código esté actualizado:
+
+   ```bash
+   git pull
+   rg -n "express/node_modules/formidable|formidable" index.js
+   ```
+
+   El comando no debería devolver resultados.
+
+2. Reinstala dependencias desde cero:
+
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+3. Reinicia completamente el proceso y vuelve a iniciar la app:
+
+   ```bash
+   npm run start
+   ```

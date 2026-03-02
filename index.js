@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs/promises');
 const express = require('express');
 const dotenv = require('dotenv');
 
@@ -12,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: '20mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const asyncHandler = (handler) => (req, res, next) =>
@@ -34,6 +35,9 @@ const formatDateInput = (value) => {
 const TURNOS_ESTADOS = new Set(['Pendiente', 'Terminado', 'Cancelado']);
 const SEXOS_MASCOTA = new Set(['Macho', 'Hembra']);
 const TAMANIOS_MASCOTA = new Set(['Grande', 'Mediano', 'Pequeño']);
+const HISTORIA_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'historia-clinica');
+
+const getFieldValue = (field) => (Array.isArray(field) ? field[0] : field);
 
 const ensureMascotasRazasHasEspecieRelation = async () => {
   const [columns] = await pool.query(
@@ -101,6 +105,105 @@ const ensureHistoriaClinicaHasOtrosDatos = async () => {
   if (!columns.length) {
     await pool.query('ALTER TABLE historia_clinica ADD COLUMN otros_datos TEXT NULL AFTER tratamiento');
   }
+};
+
+const ensureHistoriaClinicaHasDocumentoAdjunto = async () => {
+  const [columns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'historia_clinica'
+       AND COLUMN_NAME IN ('documento_adjunto_nombre', 'documento_adjunto_ruta')`
+  );
+
+  const columnNames = new Set(columns.map((column) => column.COLUMN_NAME));
+
+  if (!columnNames.has('documento_adjunto_nombre')) {
+    await pool.query(
+      `ALTER TABLE historia_clinica
+       ADD COLUMN documento_adjunto_nombre VARCHAR(255) NULL AFTER otros_datos`
+    );
+  }
+
+  if (!columnNames.has('documento_adjunto_ruta')) {
+    await pool.query(
+      `ALTER TABLE historia_clinica
+       ADD COLUMN documento_adjunto_ruta VARCHAR(255) NULL AFTER documento_adjunto_nombre`
+    );
+  }
+};
+
+const ensureHistoriaClinicaDocumentosTable = async () => {
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS historia_clinica_documentos (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      historia_clinica_id INT NOT NULL,
+      nombre_original VARCHAR(255) NOT NULL,
+      ruta_publica VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_historia_documento_historia
+        FOREIGN KEY (historia_clinica_id) REFERENCES historia_clinica(id)
+        ON DELETE CASCADE
+    )`
+  );
+
+  const [legacyRows] = await pool.query(
+    `SELECT id, documento_adjunto_nombre, documento_adjunto_ruta
+     FROM historia_clinica
+     WHERE documento_adjunto_ruta IS NOT NULL`
+  );
+
+  for (const row of legacyRows) {
+    await pool.query(
+      `INSERT INTO historia_clinica_documentos (historia_clinica_id, nombre_original, ruta_publica)
+       SELECT ?, ?, ?
+       FROM DUAL
+       WHERE NOT EXISTS (
+         SELECT 1
+         FROM historia_clinica_documentos
+         WHERE historia_clinica_id = ?
+           AND ruta_publica = ?
+       )`,
+      [
+        row.id,
+        row.documento_adjunto_nombre || 'Documento PDF',
+        row.documento_adjunto_ruta,
+        row.id,
+        row.documento_adjunto_ruta,
+      ]
+    );
+  }
+};
+
+const extractPdfAttachmentFromBody = (body) => {
+  const originalName = (body.documentacion_adjunta_nombre || '').trim();
+  const pdfBase64Value = body.documentacion_adjunta_base64 || '';
+
+  if (!pdfBase64Value) {
+    return null;
+  }
+
+  const hasPdfExtension = originalName.toLowerCase().endsWith('.pdf');
+  const hasPdfPrefix = pdfBase64Value.startsWith('data:application/pdf;base64,');
+  if (!hasPdfExtension || !hasPdfPrefix) {
+    throw new Error('La documentación adjunta debe ser un archivo PDF válido.');
+  }
+
+  const base64Data = pdfBase64Value.replace('data:application/pdf;base64,', '');
+  return {
+    originalName,
+    pdfBuffer: Buffer.from(base64Data, 'base64'),
+  };
+};
+
+const savePdfAttachment = async ({ originalName, pdfBuffer }) => {
+  const uniqueFileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
+  const targetFilePath = path.join(HISTORIA_UPLOAD_DIR, uniqueFileName);
+  await fs.writeFile(targetFilePath, pdfBuffer);
+  return {
+    nombreOriginal: originalName,
+    rutaPublica: `/uploads/historia-clinica/${uniqueFileName}`,
+  };
 };
 
 const validateMascotaSexo = (sexo) => {
@@ -419,7 +522,19 @@ app.get(
       });
     }
 
-    return res.render('historia-detalle', { historia: historias[0] });
+    const historia = historias[0];
+    const [documentos] = await pool.query(
+      `SELECT id, historia_clinica_id, nombre_original, ruta_publica, created_at
+       FROM historia_clinica_documentos
+       WHERE historia_clinica_id = ?
+       ORDER BY created_at DESC, id DESC`,
+      [historia.id]
+    );
+
+    return res.render('historia-detalle', {
+      historia,
+      documentos,
+    });
   })
 );
 
@@ -452,6 +567,9 @@ app.get(
 app.post(
   '/historia-clinica',
   asyncHandler(async (req, res) => {
+    let documentoAdjuntoNombre = null;
+    let documentoAdjuntoRuta = null;
+
     const {
       mascota_id,
       fecha,
@@ -473,8 +591,23 @@ app.post(
       analisis_solicitados,
       tratamiento,
       otros_datos,
-    } = req.body;
-    await pool.query(
+      documentacion_adjunta_nombre,
+      documentacion_adjunta_base64,
+    } = Object.fromEntries(
+      Object.entries(req.body).map(([key, value]) => [key, getFieldValue(value)])
+    );
+
+    const pdfAttachment = extractPdfAttachmentFromBody({
+      documentacion_adjunta_nombre,
+      documentacion_adjunta_base64,
+    });
+
+    if (pdfAttachment) {
+      const attachmentData = await savePdfAttachment(pdfAttachment);
+      documentoAdjuntoNombre = attachmentData.nombreOriginal;
+      documentoAdjuntoRuta = attachmentData.rutaPublica;
+    }
+    const [insertResult] = await pool.query(
       `INSERT INTO historia_clinica (
         mascota_id,
         fecha,
@@ -495,8 +628,10 @@ app.post(
         diagnostico_definitivo,
         analisis_solicitados,
         tratamiento,
-        otros_datos
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        otros_datos,
+        documento_adjunto_nombre,
+        documento_adjunto_ruta
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         mascota_id,
         fecha,
@@ -518,9 +653,56 @@ app.post(
         analisis_solicitados || null,
         tratamiento || null,
         otros_datos || null,
+        documentoAdjuntoNombre,
+        documentoAdjuntoRuta,
       ]
     );
+
+    if (documentoAdjuntoRuta) {
+      await pool.query(
+        `INSERT INTO historia_clinica_documentos (historia_clinica_id, nombre_original, ruta_publica)
+         VALUES (?, ?, ?)`,
+        [insertResult.insertId, documentoAdjuntoNombre || 'Documento PDF', documentoAdjuntoRuta]
+      );
+    }
+
     res.redirect('/historia-clinica');
+  })
+);
+
+app.post(
+  '/historia-clinica/:id/documentos',
+  asyncHandler(async (req, res) => {
+    const historiaId = Number(req.params.id);
+    if (!Number.isInteger(historiaId) || historiaId <= 0) {
+      return res.status(400).render('error', {
+        message: 'La historia clínica indicada no es válida.',
+      });
+    }
+
+    const [historias] = await pool.query('SELECT id FROM historia_clinica WHERE id = ?', [historiaId]);
+    if (!historias.length) {
+      return res.status(404).render('error', {
+        message: 'La historia clínica solicitada no existe.',
+      });
+    }
+
+    const payload = Object.fromEntries(
+      Object.entries(req.body).map(([key, value]) => [key, getFieldValue(value)])
+    );
+    const pdfAttachment = extractPdfAttachmentFromBody(payload);
+    if (!pdfAttachment) {
+      throw new Error('Debes adjuntar un archivo PDF para agregar documentación.');
+    }
+
+    const attachmentData = await savePdfAttachment(pdfAttachment);
+    await pool.query(
+      `INSERT INTO historia_clinica_documentos (historia_clinica_id, nombre_original, ruta_publica)
+       VALUES (?, ?, ?)`,
+      [historiaId, attachmentData.nombreOriginal || 'Documento PDF', attachmentData.rutaPublica]
+    );
+
+    res.redirect(`/historia-clinica/${historiaId}`);
   })
 );
 
@@ -942,9 +1124,12 @@ app.use((err, req, res, next) => {
 });
 
 const startServer = async () => {
+  await fs.mkdir(HISTORIA_UPLOAD_DIR, { recursive: true });
   await ensureMascotasRazasHasEspecieRelation();
   await ensureMascotasHasSexoAndTamanio();
   await ensureHistoriaClinicaHasOtrosDatos();
+  await ensureHistoriaClinicaHasDocumentoAdjunto();
+  await ensureHistoriaClinicaDocumentosTable();
   app.listen(PORT, () => {
     console.log(`Servidor iniciado en http://localhost:${PORT}`);
   });

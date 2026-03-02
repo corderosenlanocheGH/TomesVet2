@@ -1216,7 +1216,7 @@ app.get(
   '/turnos',
   asyncHandler(async (req, res) => {
     const [turnos] = await pool.query(
-      `SELECT turnos.*, clientes.nombre AS cliente_nombre, mascotas.nombre AS mascota_nombre
+      `SELECT turnos.*, clientes.nombre AS cliente_nombre, clientes.telefono AS cliente_telefono, mascotas.nombre AS mascota_nombre
        FROM turnos
        JOIN clientes ON clientes.id = turnos.cliente_id
        JOIN mascotas ON mascotas.id = turnos.mascota_id

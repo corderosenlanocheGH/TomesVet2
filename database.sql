@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS vacunas (
   fecha_aplicacion DATE NOT NULL,
   proxima_fecha_aplicacion DATE,
   numero_serie VARCHAR(120),
+  recordatorio_whatsapp_enviado TINYINT(1) NOT NULL DEFAULT 0,
   CONSTRAINT fk_vacuna_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas(id),
   CONSTRAINT fk_vacuna_nombre_comercial
     FOREIGN KEY (nombre_comercial_id) REFERENCES vacunas_nombres_comerciales(id),

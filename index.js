@@ -278,6 +278,22 @@ const ensureHistoriaClinicaDocumentosTable = async () => {
   }
 };
 
+const ensureVacunasHasWhatsappReminderFlag = async () => {
+  const [columns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'vacunas'
+       AND COLUMN_NAME = 'recordatorio_whatsapp_enviado'`
+  );
+
+  if (!columns.length) {
+    await pool.query(
+      'ALTER TABLE vacunas ADD COLUMN recordatorio_whatsapp_enviado TINYINT(1) NOT NULL DEFAULT 0 AFTER numero_serie'
+    );
+  }
+};
+
 const extractPdfAttachmentFromBody = (body) => {
   const originalName = (body.documentacion_adjunta_nombre || '').trim();
   const pdfBase64Value = body.documentacion_adjunta_base64 || '';
@@ -1016,6 +1032,7 @@ app.get(
     const [recordatorios] = await pool.query(
       `SELECT vacunas.id,
               vacunas.proxima_fecha_aplicacion,
+              vacunas.recordatorio_whatsapp_enviado,
               vacunas_tipos.nombre AS tipo,
               vacunas_nombres_comerciales.nombre AS nombre_comercial,
               mascotas.nombre AS mascota_nombre,
@@ -1033,6 +1050,22 @@ app.get(
     );
 
     res.render('vacunas-proximas', { recordatorios });
+  })
+);
+
+app.post(
+  '/vacunas/:id/recordatorio-whatsapp',
+  asyncHandler(async (req, res) => {
+    const recordatorioEnviado = req.body.recordatorio_whatsapp_enviado === '1' ? 1 : 0;
+
+    await pool.query(
+      `UPDATE vacunas
+       SET recordatorio_whatsapp_enviado = ?
+       WHERE id = ?`,
+      [recordatorioEnviado, req.params.id]
+    );
+
+    res.redirect('/vacunas/proximas');
   })
 );
 
@@ -1427,6 +1460,7 @@ const startServer = async () => {
   await ensureHistoriaClinicaHasDocumentoAdjunto();
   await ensureHistoriaClinicaDocumentosTable();
   await ensureConfiguracionClinicaTable();
+  await ensureVacunasHasWhatsappReminderFlag();
   app.listen(PORT, () => {
     console.log(`Servidor iniciado en http://localhost:${PORT}`);
   });

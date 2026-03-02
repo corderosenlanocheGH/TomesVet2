@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs/promises');
 const express = require('express');
 const dotenv = require('dotenv');
+//const formidable = require('express/node_modules/formidable');
 
 dotenv.config();
 
@@ -131,79 +132,6 @@ const ensureHistoriaClinicaHasDocumentoAdjunto = async () => {
        ADD COLUMN documento_adjunto_ruta VARCHAR(255) NULL AFTER documento_adjunto_nombre`
     );
   }
-};
-
-const ensureHistoriaClinicaDocumentosTable = async () => {
-  await pool.query(
-    `CREATE TABLE IF NOT EXISTS historia_clinica_documentos (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      historia_clinica_id INT NOT NULL,
-      nombre_original VARCHAR(255) NOT NULL,
-      ruta_publica VARCHAR(255) NOT NULL,
-      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      CONSTRAINT fk_historia_documento_historia
-        FOREIGN KEY (historia_clinica_id) REFERENCES historia_clinica(id)
-        ON DELETE CASCADE
-    )`
-  );
-
-  const [legacyRows] = await pool.query(
-    `SELECT id, documento_adjunto_nombre, documento_adjunto_ruta
-     FROM historia_clinica
-     WHERE documento_adjunto_ruta IS NOT NULL`
-  );
-
-  for (const row of legacyRows) {
-    await pool.query(
-      `INSERT INTO historia_clinica_documentos (historia_clinica_id, nombre_original, ruta_publica)
-       SELECT ?, ?, ?
-       FROM DUAL
-       WHERE NOT EXISTS (
-         SELECT 1
-         FROM historia_clinica_documentos
-         WHERE historia_clinica_id = ?
-           AND ruta_publica = ?
-       )`,
-      [
-        row.id,
-        row.documento_adjunto_nombre || 'Documento PDF',
-        row.documento_adjunto_ruta,
-        row.id,
-        row.documento_adjunto_ruta,
-      ]
-    );
-  }
-};
-
-const extractPdfAttachmentFromBody = (body) => {
-  const originalName = (body.documentacion_adjunta_nombre || '').trim();
-  const pdfBase64Value = body.documentacion_adjunta_base64 || '';
-
-  if (!pdfBase64Value) {
-    return null;
-  }
-
-  const hasPdfExtension = originalName.toLowerCase().endsWith('.pdf');
-  const hasPdfPrefix = pdfBase64Value.startsWith('data:application/pdf;base64,');
-  if (!hasPdfExtension || !hasPdfPrefix) {
-    throw new Error('La documentación adjunta debe ser un archivo PDF válido.');
-  }
-
-  const base64Data = pdfBase64Value.replace('data:application/pdf;base64,', '');
-  return {
-    originalName,
-    pdfBuffer: Buffer.from(base64Data, 'base64'),
-  };
-};
-
-const savePdfAttachment = async ({ originalName, pdfBuffer }) => {
-  const uniqueFileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
-  const targetFilePath = path.join(HISTORIA_UPLOAD_DIR, uniqueFileName);
-  await fs.writeFile(targetFilePath, pdfBuffer);
-  return {
-    nombreOriginal: originalName,
-    rutaPublica: `/uploads/historia-clinica/${uniqueFileName}`,
-  };
 };
 
 const validateMascotaSexo = (sexo) => {
@@ -597,17 +525,25 @@ app.post(
       Object.entries(req.body).map(([key, value]) => [key, getFieldValue(value)])
     );
 
-    const pdfAttachment = extractPdfAttachmentFromBody({
-      documentacion_adjunta_nombre,
-      documentacion_adjunta_base64,
-    });
+    if (documentacion_adjunta_base64) {
+      const originalName = (documentacion_adjunta_nombre || '').trim();
+      const hasPdfExtension = originalName.toLowerCase().endsWith('.pdf');
+      const hasPdfPrefix = documentacion_adjunta_base64.startsWith('data:application/pdf;base64,');
 
-    if (pdfAttachment) {
-      const attachmentData = await savePdfAttachment(pdfAttachment);
-      documentoAdjuntoNombre = attachmentData.nombreOriginal;
-      documentoAdjuntoRuta = attachmentData.rutaPublica;
+      if (!hasPdfExtension || !hasPdfPrefix) {
+        throw new Error('La documentación adjunta debe ser un archivo PDF válido.');
+      }
+
+      const base64Data = documentacion_adjunta_base64.replace('data:application/pdf;base64,', '');
+      const pdfBuffer = Buffer.from(base64Data, 'base64');
+      const uniqueFileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
+      const targetFilePath = path.join(HISTORIA_UPLOAD_DIR, uniqueFileName);
+      await fs.writeFile(targetFilePath, pdfBuffer);
+
+      documentoAdjuntoNombre = originalName;
+      documentoAdjuntoRuta = `/uploads/historia-clinica/${uniqueFileName}`;
     }
-    const [insertResult] = await pool.query(
+    await pool.query(
       `INSERT INTO historia_clinica (
         mascota_id,
         fecha,
@@ -1129,7 +1065,6 @@ const startServer = async () => {
   await ensureMascotasHasSexoAndTamanio();
   await ensureHistoriaClinicaHasOtrosDatos();
   await ensureHistoriaClinicaHasDocumentoAdjunto();
-  await ensureHistoriaClinicaDocumentosTable();
   app.listen(PORT, () => {
     console.log(`Servidor iniciado en http://localhost:${PORT}`);
   });

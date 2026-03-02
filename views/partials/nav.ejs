@@ -12,21 +12,24 @@
     .join('') || 'TV'; %>
   <aside class="sidebar">
     <div class="sidebar-header">
-      <span class="sidebar-brand"><%= veterinariaNombre %></span>
+      <div class="sidebar-brand-wrap">
+        <% if (logoRuta) { %>
+          <img class="sidebar-brand-logo" src="<%= logoRuta %>" alt="Logo de <%= veterinariaNombre %>" />
+        <% } else { %>
+          <div class="sidebar-brand-logo sidebar-brand-logo-fallback"><%= brandInitials %></div>
+        <% } %>
+        <span class="sidebar-brand"><%= veterinariaNombre %></span>
+      </div>
       <button class="sidebar-toggle" type="button" aria-label="Mostrar menú">
         <i class="bi bi-list"></i>
       </button>
     </div>
     <div class="sidebar-user">
-      <% if (logoRuta) { %>
-        <img class="sidebar-avatar sidebar-avatar-image" src="<%= logoRuta %>" alt="Logo de <%= veterinariaNombre %>" />
-      <% } else { %>
-        <div class="sidebar-avatar"><%= brandInitials %></div>
-      <% } %>
       <div>
-        <p class="sidebar-name"><%= veterinariaNombre %></p>
         <% if (medicaNombre) { %>
-          <span class="sidebar-role d-block">Médica: <%= medicaNombre %></span>
+          <p class="sidebar-name"><%= medicaNombre %></p>
+        <% } else { %>
+          <p class="sidebar-name">Médica no configurada</p>
         <% } %>
         <% if (medicaMatricula) { %>
           <span class="sidebar-role d-block">Matrícula: <%= medicaMatricula %></span>

@@ -1,89 +1,69 @@
-<%- include('partials/head', { title: 'Panel principal | TomesVet' }) %>
+<%- include('partials/head', { title: 'Indicaciones prequirúrgicas | TomesVet' }) %>
 <%- include('partials/nav') %>
 
-<main class="content-area">
-  <section class="pet-hero mb-4">
-    <div class="pet-hero-copy">
-      <span class="pet-hero-kicker">TomesVet Dashboard</span>
-      <h1 class="pet-hero-title">Easy care for every pet in your clinic</h1>
-      <p class="pet-hero-description mb-0">
-        Inspirado en un layout pet-shop: visual, amigable y pensado para revisar el estado
-        de la clínica en un solo vistazo.
-      </p>
-      <div class="pet-hero-actions mt-3">
-        <a href="/turnos" class="btn rounded-pill px-3 pet-btn-primary">Ver turnos</a>
-        <a href="/mascotas" class="btn rounded-pill px-3 pet-btn-secondary">Ver mascotas</a>
-      </div>
+<main class="content-area preop-layout">
+  <section class="preop-hero mb-4">
+    <div>
+      <p class="preop-kicker mb-2">Guía oficial · TomesVet</p>
+      <h1 class="preop-title mb-0">INDICACIONES<br />PREQUIRÚRGICAS</h1>
     </div>
-    <div class="pet-hero-illustration" aria-hidden="true">
-      <div class="pet-bubble pet-bubble-main">🐶</div>
-      <div class="pet-bubble pet-bubble-secondary">🐱</div>
-      <div class="pet-badge">● Sistema operativo</div>
-    </div>
+    <div class="preop-logo" aria-label="Logo TomesVet">TV</div>
   </section>
 
-  <section class="pet-section mb-4">
+  <section class="preop-steps">
+    <article class="preop-step-card">
+      <div class="preop-number">1</div>
+      <div class="preop-copy">
+        <h2>Ayuno previo</h2>
+        <p><strong>Ayuno sólido:</strong> de 8 horas antes de la cirugía.</p>
+        <p class="mb-0"><strong>Ayuno líquido:</strong> retirar el agua 4 horas antes del procedimiento.</p>
+      </div>
+    </article>
+
+    <article class="preop-step-card">
+      <div class="preop-number">2</div>
+      <div class="preop-copy">
+        <h2>Transporte seguro</h2>
+        <p><strong>Perros:</strong> deben llevar collar y correa.</p>
+        <p class="mb-0"><strong>Gatos:</strong> trasladarlos en bolso, caja o transportador seguro.</p>
+      </div>
+    </article>
+
+    <article class="preop-step-card">
+      <div class="preop-number">3</div>
+      <div class="preop-copy">
+        <h2>Elementos a llevar</h2>
+        <p><strong>Manta:</strong> para abrigar a la mascota luego de la cirugía.</p>
+        <p class="mb-0"><strong>Tela para faja postquirúrgica:</strong> ayuda a proteger la incisión y evita el lamido.</p>
+      </div>
+    </article>
+
+    <article class="preop-step-card mb-0">
+      <div class="preop-number">4</div>
+      <div class="preop-copy">
+        <h2>Preparación adicional</h2>
+        <p class="mb-0">
+          <strong>Condiciones preexistentes:</strong> si tu mascota tiene una condición médica o toma medicación,
+          avisanos antes de la cirugía para ajustar cuidados y reducir riesgos.
+        </p>
+      </div>
+    </article>
+  </section>
+
+  <section class="pet-section mt-4">
     <div class="pet-section-header">
-      <h2 class="pet-section-title">Your plays</h2>
+      <h2 class="pet-section-title">Estado del sistema</h2>
       <span class="pet-section-pill">Resumen</span>
     </div>
     <div class="pet-metric-grid">
-      <article class="pet-metric-card">
-        <span class="pet-metric-icon">👤</span>
-        <p class="pet-metric-label">Clientes</p>
-        <p class="pet-metric-value"><%= counts.clientes %></p>
-      </article>
-      <article class="pet-metric-card">
-        <span class="pet-metric-icon">🐾</span>
-        <p class="pet-metric-label">Mascotas</p>
-        <p class="pet-metric-value"><%= counts.mascotas %></p>
-      </article>
-      <article class="pet-metric-card">
-        <span class="pet-metric-icon">🩺</span>
-        <p class="pet-metric-label">Historias</p>
-        <p class="pet-metric-value"><%= counts.historias %></p>
-      </article>
-      <article class="pet-metric-card">
-        <span class="pet-metric-icon">💉</span>
-        <p class="pet-metric-label">Vacunas</p>
-        <p class="pet-metric-value"><%= counts.vacunas %></p>
-      </article>
-      <article class="pet-metric-card">
-        <span class="pet-metric-icon">📅</span>
-        <p class="pet-metric-label">Turnos</p>
-        <p class="pet-metric-value"><%= counts.turnos %></p>
-      </article>
-      <article class="pet-metric-card">
-        <span class="pet-metric-icon">🧑‍⚕️</span>
-        <p class="pet-metric-label">Usuarios</p>
-        <p class="pet-metric-value"><%= counts.usuarios %></p>
-      </article>
+      <article class="pet-metric-card"><p class="pet-metric-label">Clientes</p><p class="pet-metric-value"><%= counts.clientes %></p></article>
+      <article class="pet-metric-card"><p class="pet-metric-label">Mascotas</p><p class="pet-metric-value"><%= counts.mascotas %></p></article>
+      <article class="pet-metric-card"><p class="pet-metric-label">Historias</p><p class="pet-metric-value"><%= counts.historias %></p></article>
+      <article class="pet-metric-card"><p class="pet-metric-label">Vacunas</p><p class="pet-metric-value"><%= counts.vacunas %></p></article>
+      <article class="pet-metric-card"><p class="pet-metric-label">Turnos</p><p class="pet-metric-value"><%= counts.turnos %></p></article>
+      <article class="pet-metric-card"><p class="pet-metric-label">Usuarios</p><p class="pet-metric-value"><%= counts.usuarios %></p></article>
     </div>
   </section>
-
-  <div class="row g-4">
-    <div class="col-12 col-lg-7">
-      <div class="card pet-banner-card border-0 h-100">
-        <div class="card-body">
-          <span class="pet-banner-kicker">Visitar sitio web</span>
-          <h3 class="pet-banner-title">Tu clínica con look pet-care moderno</h3>
-          <p class="mb-0">
-            Esta portada replica la estética del ejemplo con bloques suaves, tarjetas redondeadas
-            y enfoque en información rápida.
-          </p>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-lg-5">
-      <div class="card pet-highlight-card border-0 h-100">
-        <div class="card-body">
-          <p class="pet-highlight-label">Agenda del día</p>
-          <p class="pet-highlight-value mb-2"><%= counts.turnos %> turnos</p>
-          <p class="mb-0">Mantené al día vacunación y controles con una vista clara.</p>
-        </div>
-      </div>
-    </div>
-  </div>
 </main>
 
 <%- include('partials/footer') %>

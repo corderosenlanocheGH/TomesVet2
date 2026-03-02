@@ -818,3 +818,185 @@ table th {
     flex-wrap: wrap;
   }
 }
+
+/* === Tema global inspirado en la referencia prequirúrgica === */
+:root {
+  --tv-bg: #ecebf0;
+  --tv-lila: #9b8ab6;
+  --tv-lila-dark: #6e548e;
+  --tv-lila-soft: #d8d3eb;
+  --tv-card: #ffffff;
+  --tv-text: #1e1a24;
+  --tv-border: #ddd8ea;
+}
+
+body,
+.app-shell {
+  background: radial-gradient(circle at 15% 88%, rgba(104, 149, 192, 0.2), transparent 24%),
+    radial-gradient(circle at 90% 85%, rgba(160, 133, 190, 0.18), transparent 28%),
+    var(--tv-bg);
+  color: var(--tv-text);
+}
+
+.sidebar {
+  background: linear-gradient(180deg, #8e7bab 0%, #a493be 100%);
+  box-shadow: 0 16px 30px rgba(76, 60, 104, 0.25);
+}
+
+.sidebar-link,
+.sidebar-toggle,
+.sidebar-user {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.sidebar-link:hover {
+  background: #fff;
+  color: var(--tv-lila-dark);
+}
+
+.topbar {
+  background: linear-gradient(90deg, #8e7bab, #a897c1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 20px rgba(94, 76, 122, 0.2);
+}
+
+.content-area {
+  padding: 2rem;
+}
+
+.content-area .card,
+.pet-section,
+.table,
+.form-control,
+.form-select {
+  border-radius: 28px !important;
+}
+
+.content-area .card,
+.pet-section {
+  border: 1px solid var(--tv-border);
+  box-shadow: 0 12px 24px rgba(77, 64, 105, 0.08);
+}
+
+.btn-primary {
+  background: var(--tv-lila-dark);
+  border-color: var(--tv-lila-dark);
+}
+
+.btn-outline-primary {
+  color: var(--tv-lila-dark);
+  border-color: #b8aad2;
+}
+
+.btn-outline-primary:hover {
+  background: var(--tv-lila-dark);
+  border-color: var(--tv-lila-dark);
+}
+
+.preop-layout {
+  max-width: 1200px;
+}
+
+.preop-hero {
+  background: linear-gradient(145deg, #9b8ab6 0%, #8e7eab 60%, #b8afca 100%);
+  border-radius: 42px;
+  padding: 2.8rem 2.6rem;
+  color: #fff;
+  min-height: 230px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.preop-kicker {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.preop-title {
+  font-family: 'Georgia', serif;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+}
+
+.preop-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #f7f6fc;
+  color: var(--tv-lila-dark);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  border: 3px solid #c7bde0;
+}
+
+.preop-steps {
+  display: grid;
+  gap: 1rem;
+}
+
+.preop-step-card {
+  display: grid;
+  grid-template-columns: 95px 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.preop-number {
+  width: 95px;
+  height: 95px;
+  border-radius: 50%;
+  background: var(--tv-lila-soft);
+  color: var(--tv-lila-dark);
+  display: grid;
+  place-items: center;
+  font-size: 2.2rem;
+  font-weight: 800;
+}
+
+.preop-copy {
+  background: #fff;
+  border-radius: 999px;
+  padding: 1.3rem 1.8rem;
+  border: 1px solid #e8e3f2;
+}
+
+.preop-copy h2 {
+  text-transform: uppercase;
+  font-weight: 900;
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+}
+
+.preop-copy p {
+  margin-bottom: 0.15rem;
+}
+
+.pet-section-pill {
+  background: #efeaf9;
+  color: var(--tv-lila-dark);
+}
+
+.pet-metric-card {
+  border-radius: 18px;
+  border: 1px solid #e3dcf0;
+}
+
+.pet-metric-value {
+  color: var(--tv-lila-dark);
+}
+
+@media (max-width: 992px) {
+  .sidebar {
+    width: 220px;
+  }
+
+  .preop-copy {
+    border-radius: 24px;
+  }
+}

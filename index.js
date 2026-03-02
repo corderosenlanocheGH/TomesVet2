@@ -134,6 +134,116 @@ const ensureHistoriaClinicaHasDocumentoAdjunto = async () => {
   }
 };
 
+const ensureHistoriaClinicaDocumentosTable = async () => {
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS historia_clinica_documentos (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      historia_clinica_id INT NOT NULL,
+      nombre_original VARCHAR(255) NOT NULL,
+      ruta_publica VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_historia_documento_historia
+        FOREIGN KEY (historia_clinica_id) REFERENCES historia_clinica(id)
+        ON DELETE CASCADE
+    )`
+  );
+
+  const [legacyRows] = await pool.query(
+    `SELECT id, documento_adjunto_nombre, documento_adjunto_ruta
+     FROM historia_clinica
+     WHERE documento_adjunto_ruta IS NOT NULL`
+  );
+
+  for (const row of legacyRows) {
+    await pool.query(
+      `INSERT INTO historia_clinica_documentos (historia_clinica_id, nombre_original, ruta_publica)
+       SELECT ?, ?, ?
+       FROM DUAL
+       WHERE NOT EXISTS (
+         SELECT 1
+         FROM historia_clinica_documentos
+         WHERE historia_clinica_id = ?
+           AND ruta_publica = ?
+       )`,
+      [
+        row.id,
+        row.documento_adjunto_nombre || 'Documento PDF',
+        row.documento_adjunto_ruta,
+        row.id,
+        row.documento_adjunto_ruta,
+      ]
+    );
+  }
+};
+
+const extractPdfAttachmentFromBody = (body) => {
+  const originalName = (body.documentacion_adjunta_nombre || '').trim();
+  const pdfBase64Value = body.documentacion_adjunta_base64 || '';
+
+  if (!pdfBase64Value) {
+    return null;
+  }
+
+  const hasPdfExtension = originalName.toLowerCase().endsWith('.pdf');
+  const hasPdfPrefix = pdfBase64Value.startsWith('data:application/pdf;base64,');
+  if (!hasPdfExtension || !hasPdfPrefix) {
+    throw new Error('La documentación adjunta debe ser un archivo PDF válido.');
+  }
+
+  const base64Data = pdfBase64Value.replace('data:application/pdf;base64,', '');
+  return {
+    originalName,
+    pdfBuffer: Buffer.from(base64Data, 'base64'),
+  };
+};
+
+const savePdfAttachment = async ({ originalName, pdfBuffer }) => {
+  const uniqueFileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
+  const targetFilePath = path.join(HISTORIA_UPLOAD_DIR, uniqueFileName);
+  await fs.writeFile(targetFilePath, pdfBuffer);
+  return {
+    nombreOriginal: originalName,
+    rutaPublica: `/uploads/historia-clinica/${uniqueFileName}`,
+  };
+};
+
+const extractPdfAttachmentsFromBody = (body) => {
+  const attachments = [];
+  const attachmentsJson = (body.documentaciones_adjuntas_json || '').trim();
+
+  if (attachmentsJson) {
+    let parsedAttachments;
+    try {
+      parsedAttachments = JSON.parse(attachmentsJson);
+    } catch (error) {
+      throw new Error('No se pudieron procesar los PDFs adjuntos.');
+    }
+
+    if (!Array.isArray(parsedAttachments)) {
+      throw new Error('No se pudieron procesar los PDFs adjuntos.');
+    }
+
+    for (const attachment of parsedAttachments) {
+      const parsed = extractPdfAttachmentFromBody({
+        documentacion_adjunta_nombre: attachment?.nombre || '',
+        documentacion_adjunta_base64: attachment?.base64 || '',
+      });
+      if (parsed) {
+        attachments.push(parsed);
+      }
+    }
+  }
+
+  if (!attachments.length) {
+    const singleAttachment = extractPdfAttachmentFromBody(body);
+    if (singleAttachment) {
+      attachments.push(singleAttachment);
+    }
+  }
+
+  return attachments;
+};
+
 const validateMascotaSexo = (sexo) => {
   const sexoValue = (sexo || '').trim();
   if (!sexoValue || !SEXOS_MASCOTA.has(sexoValue)) {
@@ -521,29 +631,28 @@ app.post(
       otros_datos,
       documentacion_adjunta_nombre,
       documentacion_adjunta_base64,
+      documentaciones_adjuntas_json,
     } = Object.fromEntries(
       Object.entries(req.body).map(([key, value]) => [key, getFieldValue(value)])
     );
 
-    if (documentacion_adjunta_base64) {
-      const originalName = (documentacion_adjunta_nombre || '').trim();
-      const hasPdfExtension = originalName.toLowerCase().endsWith('.pdf');
-      const hasPdfPrefix = documentacion_adjunta_base64.startsWith('data:application/pdf;base64,');
+    const pdfAttachments = extractPdfAttachmentsFromBody({
+      documentacion_adjunta_nombre,
+      documentacion_adjunta_base64,
+      documentaciones_adjuntas_json,
+    });
 
-      if (!hasPdfExtension || !hasPdfPrefix) {
-        throw new Error('La documentación adjunta debe ser un archivo PDF válido.');
-      }
-
-      const base64Data = documentacion_adjunta_base64.replace('data:application/pdf;base64,', '');
-      const pdfBuffer = Buffer.from(base64Data, 'base64');
-      const uniqueFileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
-      const targetFilePath = path.join(HISTORIA_UPLOAD_DIR, uniqueFileName);
-      await fs.writeFile(targetFilePath, pdfBuffer);
-
-      documentoAdjuntoNombre = originalName;
-      documentoAdjuntoRuta = `/uploads/historia-clinica/${uniqueFileName}`;
+    const savedAttachments = [];
+    for (const pdfAttachment of pdfAttachments) {
+      const attachmentData = await savePdfAttachment(pdfAttachment);
+      savedAttachments.push(attachmentData);
     }
-    await pool.query(
+
+    if (savedAttachments.length) {
+      documentoAdjuntoNombre = savedAttachments[0].nombreOriginal;
+      documentoAdjuntoRuta = savedAttachments[0].rutaPublica;
+    }
+    const [insertResult] = await pool.query(
       `INSERT INTO historia_clinica (
         mascota_id,
         fecha,
@@ -594,11 +703,11 @@ app.post(
       ]
     );
 
-    if (documentoAdjuntoRuta) {
+    for (const attachmentData of savedAttachments) {
       await pool.query(
         `INSERT INTO historia_clinica_documentos (historia_clinica_id, nombre_original, ruta_publica)
          VALUES (?, ?, ?)`,
-        [insertResult.insertId, documentoAdjuntoNombre || 'Documento PDF', documentoAdjuntoRuta]
+        [insertResult.insertId, attachmentData.nombreOriginal || 'Documento PDF', attachmentData.rutaPublica]
       );
     }
 
@@ -1065,6 +1174,7 @@ const startServer = async () => {
   await ensureMascotasHasSexoAndTamanio();
   await ensureHistoriaClinicaHasOtrosDatos();
   await ensureHistoriaClinicaHasDocumentoAdjunto();
+  await ensureHistoriaClinicaDocumentosTable();
   app.listen(PORT, () => {
     console.log(`Servidor iniciado en http://localhost:${PORT}`);
   });

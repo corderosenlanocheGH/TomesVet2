@@ -179,7 +179,7 @@
       <div class="card border-0 shadow-sm">
         <div class="card-body">
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-            <h4 class="card-title mb-0">Mascotas registradas</h4>
+            <h4 class="card-title mb-0">Mascotas</h4>
             <a class="btn btn-primary" href="/mascotas?nuevo=1">Nueva mascota</a>
           </div>
           <div class="row g-3 turnos-filters mb-3">
@@ -222,8 +222,6 @@
                   <th>Sexo</th>
                   <th>Tamaño</th>
                   <th>Color</th>
-                  <th>Señas particulares</th>
-                  <th>Fecha nacimiento</th>
                   <th>Cliente</th>
                   <th></th>
                 </tr>
@@ -237,8 +235,6 @@
                     <td><%= mascota.sexo || '-' %></td>
                     <td><%= mascota.tamanio || '-' %></td>
                     <td><%= mascota.color || '-' %></td>
-                    <td><%= mascota.senias_particulares || '-' %></td>
-                    <td><%= formatShortDate(mascota.fecha_nacimiento) || '-' %></td>
                     <td>
                       <a class="link-secondary text-decoration-none" href="/clientes?mascota_id=<%= mascota.id %>">
                         <%= mascota.cliente_nombre %>

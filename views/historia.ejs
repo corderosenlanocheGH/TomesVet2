@@ -235,6 +235,18 @@
                 <input class="form-control" type="date" id="historia-hasta" />
               </div>
               <div class="d-flex align-items-end">
+                <a
+                  class="btn btn-outline-primary"
+                  id="historia-pdf-mascota"
+                  href="<%= selectedMascotaId ? `/historia-clinica/mascota/${selectedMascotaId}/imprimir` : '#' %>"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  <%= selectedMascotaId ? '' : 'aria-disabled="true"' %>
+                >
+                  PDF de la mascota
+                </a>
+              </div>
+              <div class="d-flex align-items-end">
                 <button class="btn btn-outline-secondary" type="button" id="historia-limpiar">
                   Limpiar
                 </button>
@@ -290,6 +302,7 @@
   const fechaDesde = document.getElementById('historia-desde');
   const fechaHasta = document.getElementById('historia-hasta');
   const limpiarHistoria = document.getElementById('historia-limpiar');
+  const pdfMascotaButton = document.getElementById('historia-pdf-mascota');
   const historiaForm = document.getElementById('historia-form');
   const documentacionAdjuntaInput = document.getElementById('documentacion-adjunta');
   const documentacionAgregarButton = document.getElementById('documentacion-agregar');
@@ -316,6 +329,21 @@
   };
 
   const historiaRows = Array.from(historiaBody?.querySelectorAll('tr') || []);
+
+  const updatePdfMascotaLink = () => {
+    if (!pdfMascotaButton || !mascotaFilter) return;
+    const mascotaId = mascotaFilter.value;
+    if (!mascotaId) {
+      pdfMascotaButton.setAttribute('href', '#');
+      pdfMascotaButton.setAttribute('aria-disabled', 'true');
+      pdfMascotaButton.classList.add('disabled');
+      return;
+    }
+
+    pdfMascotaButton.setAttribute('href', `/historia-clinica/mascota/${mascotaId}/imprimir`);
+    pdfMascotaButton.removeAttribute('aria-disabled');
+    pdfMascotaButton.classList.remove('disabled');
+  };
 
   const applyHistoriaFilters = () => {
     const query = normalizeText(buscarHistoria.value);
@@ -345,11 +373,24 @@
 
   if (historiaBody && buscarHistoria && mascotaFilter && fechaDesde && fechaHasta && limpiarHistoria) {
     buscarHistoria.addEventListener('input', applyHistoriaFilters);
-    mascotaFilter.addEventListener('change', applyHistoriaFilters);
+    mascotaFilter.addEventListener('change', () => {
+      applyHistoriaFilters();
+      updatePdfMascotaLink();
+    });
     fechaDesde.addEventListener('change', applyHistoriaFilters);
     fechaHasta.addEventListener('change', applyHistoriaFilters);
     limpiarHistoria.addEventListener('click', clearHistoriaFilters);
     applyHistoriaFilters();
+    updatePdfMascotaLink();
+  }
+
+  if (pdfMascotaButton) {
+    pdfMascotaButton.addEventListener('click', (event) => {
+      if (pdfMascotaButton.getAttribute('aria-disabled') === 'true') {
+        event.preventDefault();
+        alert('Selecciona una mascota para generar el PDF completo de sus historias clínicas.');
+      }
+    });
   }
 
   const renderAdjuntosPendientes = () => {

@@ -26,7 +26,8 @@
           <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
             <h4 class="card-title mb-0">Detalle de historia clínica</h4>
             <div class="d-flex gap-2">
-              <a class="btn btn-outline-primary" href="/historia-clinica/<%= historia.id %>/imprimir" target="_blank" rel="noopener noreferrer">Generar PDF</a>
+              <a class="btn btn-outline-primary" href="/historia-clinica/<%= historia.id %>/imprimir" target="_blank" rel="noopener noreferrer">PDF de esta ficha</a>
+              <a class="btn btn-outline-primary" href="/historia-clinica/mascota/<%= historia.mascota_id %>/imprimir" target="_blank" rel="noopener noreferrer">PDF completo mascota</a>
               <a class="btn btn-outline-secondary" href="/historia-clinica">Volver al listado</a>
             </div>
           </div>

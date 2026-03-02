@@ -101,4 +101,37 @@
   </div>
 </main>
 
+<script>
+  const historiaDocumentoForm = document.getElementById('historia-documento-form');
+  const historiaDocumentoInput = document.getElementById('historia-documento-adjunta');
+  const historiaDocumentoNombre = document.getElementById('historia-documento-adjunta-nombre');
+  const historiaDocumentoBase64 = document.getElementById('historia-documento-adjunta-base64');
+
+  if (historiaDocumentoForm && historiaDocumentoInput && historiaDocumentoNombre && historiaDocumentoBase64) {
+    historiaDocumentoForm.addEventListener('submit', async (event) => {
+      const [file] = historiaDocumentoInput.files || [];
+      if (!file) return;
+
+      if (file.type !== 'application/pdf' || !file.name.toLowerCase().endsWith('.pdf')) {
+        event.preventDefault();
+        alert('La documentación adjunta debe ser un archivo PDF válido.');
+        return;
+      }
+
+      event.preventDefault();
+
+      const encodedFile = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('No se pudo leer el archivo adjunto.'));
+        reader.readAsDataURL(file);
+      });
+
+      historiaDocumentoNombre.value = file.name;
+      historiaDocumentoBase64.value = encodedFile;
+      historiaDocumentoForm.submit();
+    });
+  }
+</script>
+
 <%- include('partials/footer') %>

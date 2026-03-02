@@ -450,7 +450,19 @@ app.get(
       });
     }
 
-    return res.render('historia-detalle', { historia: historias[0] });
+    const historia = historias[0];
+    const [documentos] = await pool.query(
+      `SELECT id, historia_clinica_id, nombre_original, ruta_publica, created_at
+       FROM historia_clinica_documentos
+       WHERE historia_clinica_id = ?
+       ORDER BY created_at DESC, id DESC`,
+      [historia.id]
+    );
+
+    return res.render('historia-detalle', {
+      historia,
+      documentos,
+    });
   })
 );
 
@@ -581,7 +593,52 @@ app.post(
         documentoAdjuntoRuta,
       ]
     );
+
+    if (documentoAdjuntoRuta) {
+      await pool.query(
+        `INSERT INTO historia_clinica_documentos (historia_clinica_id, nombre_original, ruta_publica)
+         VALUES (?, ?, ?)`,
+        [insertResult.insertId, documentoAdjuntoNombre || 'Documento PDF', documentoAdjuntoRuta]
+      );
+    }
+
     res.redirect('/historia-clinica');
+  })
+);
+
+app.post(
+  '/historia-clinica/:id/documentos',
+  asyncHandler(async (req, res) => {
+    const historiaId = Number(req.params.id);
+    if (!Number.isInteger(historiaId) || historiaId <= 0) {
+      return res.status(400).render('error', {
+        message: 'La historia clínica indicada no es válida.',
+      });
+    }
+
+    const [historias] = await pool.query('SELECT id FROM historia_clinica WHERE id = ?', [historiaId]);
+    if (!historias.length) {
+      return res.status(404).render('error', {
+        message: 'La historia clínica solicitada no existe.',
+      });
+    }
+
+    const payload = Object.fromEntries(
+      Object.entries(req.body).map(([key, value]) => [key, getFieldValue(value)])
+    );
+    const pdfAttachment = extractPdfAttachmentFromBody(payload);
+    if (!pdfAttachment) {
+      throw new Error('Debes adjuntar un archivo PDF para agregar documentación.');
+    }
+
+    const attachmentData = await savePdfAttachment(pdfAttachment);
+    await pool.query(
+      `INSERT INTO historia_clinica_documentos (historia_clinica_id, nombre_original, ruta_publica)
+       VALUES (?, ?, ?)`,
+      [historiaId, attachmentData.nombreOriginal || 'Documento PDF', attachmentData.rutaPublica]
+    );
+
+    res.redirect(`/historia-clinica/${historiaId}`);
   })
 );
 

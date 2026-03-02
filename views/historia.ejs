@@ -319,12 +319,28 @@
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
 
-  const parseDate = (value) => {
+  const parseDate = (value, endOfDay = false) => {
     if (!value) return null;
+
+    const normalized = value.toString().split('T')[0];
+    const parts = normalized.split('-').map(Number);
+    if (parts.length === 3 && parts.every((part) => !Number.isNaN(part))) {
+      const [year, month, day] = parts;
+      const parsed = new Date(year, month - 1, day, endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {
       return null;
     }
+
+    if (endOfDay) {
+      parsed.setHours(23, 59, 59, 999);
+    }
+
     return parsed;
   };
 
@@ -349,7 +365,7 @@
     const query = normalizeText(buscarHistoria.value);
     const mascotaId = mascotaFilter.value;
     const desde = parseDate(fechaDesde.value);
-    const hasta = parseDate(fechaHasta.value);
+    const hasta = parseDate(fechaHasta.value, true);
 
     historiaRows.forEach((row) => {
       const rowText = normalizeText(row.textContent);

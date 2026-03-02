@@ -13,6 +13,8 @@
     }
     return value;
   };
+
+  const currentDate = new Date().toISOString().split('T')[0];
 %>
 <%- include('partials/nav') %>
 
@@ -23,7 +25,7 @@
         <div class="card border-0 shadow-sm">
           <div class="card-body">
             <h4 class="card-title mb-3">Nueva Ficha medica</h4>
-            <form action="/historia-clinica" method="POST" class="d-grid gap-3">
+            <form action="/historia-clinica" method="POST" class="d-grid gap-3" id="historia-form">
               <div class="row g-3">
                 <div class="col-md-4">
                   <label class="form-label">Mascota</label>
@@ -41,7 +43,7 @@
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">Fecha</label>
-                  <input class="form-control" type="date" name="fecha" required />
+                  <input class="form-control" type="date" name="fecha" value="<%= currentDate %>" required />
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">Motivo</label>
@@ -160,6 +162,29 @@
                 <label class="form-label">Otros Datos</label>
                 <textarea class="form-control" name="otros_datos" rows="2"></textarea>
               </div>
+              <div>
+                <label class="form-label">Documentación adjunta (PDF)</label>
+                <input
+                  class="form-control"
+                  type="file"
+                  name="documentacion_adjunta"
+                  id="documentacion-adjunta"
+                  accept="application/pdf,.pdf"
+                />
+                <div class="mt-2 d-flex gap-2">
+                  <button class="btn btn-outline-primary btn-sm" type="button" id="documentacion-agregar">
+                    Agregar PDF a la ficha
+                  </button>
+                </div>
+                <ul class="small mt-2 mb-0" id="documentacion-lista"></ul>
+                <input
+                  type="hidden"
+                  name="documentaciones_adjuntas_json"
+                  id="documentaciones-adjuntas-json"
+                />
+                <input type="hidden" name="documentacion_adjunta_nombre" id="documentacion-adjunta-nombre" />
+                <input type="hidden" name="documentacion_adjunta_base64" id="documentacion-adjunta-base64" />
+              </div>
               <div class="d-flex gap-2">
                 <button class="btn btn-primary" type="submit">Guardar</button>
                 <a class="btn btn-outline-secondary" href="/historia-clinica">Cancelar</a>
@@ -224,6 +249,7 @@
                   <th>Fecha</th>
                   <th>Motivo</th>
                   <th>Aspecto general</th>
+                  <th>Documentos</th>
                 </tr>
               </thead>
               <tbody id="historias-body">
@@ -240,6 +266,11 @@
                     <td><%= formatShortDate(historia.fecha) %></td>
                     <td><%= historia.motivo %></td>
                     <td><%= historia.aspecto_general || '-' %></td>
+                    <td>
+                      <a class="btn btn-sm btn-outline-primary" href="/historia-clinica/<%= historia.id %>#historia-documento-form">
+                        Agregar PDF
+                      </a>
+                    </td>
                   </tr>
                 <% }) %>
               </tbody>
@@ -259,6 +290,14 @@
   const fechaDesde = document.getElementById('historia-desde');
   const fechaHasta = document.getElementById('historia-hasta');
   const limpiarHistoria = document.getElementById('historia-limpiar');
+  const historiaForm = document.getElementById('historia-form');
+  const documentacionAdjuntaInput = document.getElementById('documentacion-adjunta');
+  const documentacionAgregarButton = document.getElementById('documentacion-agregar');
+  const documentacionLista = document.getElementById('documentacion-lista');
+  const documentacionesAdjuntasJson = document.getElementById('documentaciones-adjuntas-json');
+  const documentacionAdjuntaNombre = document.getElementById('documentacion-adjunta-nombre');
+  const documentacionAdjuntaBase64 = document.getElementById('documentacion-adjunta-base64');
+  const adjuntosPendientes = [];
 
   const normalizeText = (value = '') =>
     value
@@ -311,6 +350,97 @@
     fechaHasta.addEventListener('change', applyHistoriaFilters);
     limpiarHistoria.addEventListener('click', clearHistoriaFilters);
     applyHistoriaFilters();
+  }
+
+  const renderAdjuntosPendientes = () => {
+    if (!documentacionLista) return;
+    documentacionLista.innerHTML = '';
+    adjuntosPendientes.forEach((adjunto, index) => {
+      const item = document.createElement('li');
+      item.className = 'd-flex align-items-center justify-content-between gap-2';
+      item.innerHTML = `<span>${adjunto.nombre}</span>`;
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'btn btn-link btn-sm text-danger p-0';
+      removeButton.textContent = 'Quitar';
+      removeButton.addEventListener('click', () => {
+        adjuntosPendientes.splice(index, 1);
+        renderAdjuntosPendientes();
+      });
+      item.appendChild(removeButton);
+      documentacionLista.appendChild(item);
+    });
+  };
+
+  if (documentacionAgregarButton && documentacionAdjuntaInput) {
+    documentacionAgregarButton.addEventListener('click', async () => {
+      const [file] = documentacionAdjuntaInput.files || [];
+      if (!file) {
+        alert('Selecciona un archivo PDF para agregar.');
+        return;
+      }
+
+      const isPdfMime = file.type === 'application/pdf';
+      const isPdfExtension = file.name.toLowerCase().endsWith('.pdf');
+      if (!isPdfMime || !isPdfExtension) {
+        alert('La documentación adjunta debe ser un archivo PDF válido.');
+        return;
+      }
+
+      const encodedFile = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('No se pudo leer el archivo adjunto.'));
+        reader.readAsDataURL(file);
+      });
+
+      adjuntosPendientes.push({ nombre: file.name, base64: encodedFile });
+      documentacionAdjuntaInput.value = '';
+      renderAdjuntosPendientes();
+    });
+  }
+
+  if (historiaForm && documentacionAdjuntaInput && documentacionAdjuntaNombre && documentacionAdjuntaBase64) {
+    historiaForm.addEventListener('submit', async (event) => {
+      if (adjuntosPendientes.length) {
+        if (documentacionesAdjuntasJson) {
+          documentacionesAdjuntasJson.value = JSON.stringify(adjuntosPendientes);
+        }
+        documentacionAdjuntaNombre.value = '';
+        documentacionAdjuntaBase64.value = '';
+        return;
+      }
+
+      const [file] = documentacionAdjuntaInput.files || [];
+      if (!file) return;
+
+      const isPdfMime = file.type === 'application/pdf';
+      const isPdfExtension = file.name.toLowerCase().endsWith('.pdf');
+
+      if (!isPdfMime || !isPdfExtension) {
+        event.preventDefault();
+        alert('La documentación adjunta debe ser un archivo PDF válido.');
+        return;
+      }
+
+      event.preventDefault();
+      const readAsDataUrl = () =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('No se pudo leer el archivo adjunto.'));
+          reader.readAsDataURL(file);
+        });
+
+      try {
+        const encodedFile = await readAsDataUrl();
+        documentacionAdjuntaNombre.value = file.name;
+        documentacionAdjuntaBase64.value = encodedFile;
+        historiaForm.submit();
+      } catch (error) {
+        alert(error.message || 'No se pudo procesar el archivo adjunto.');
+      }
+    });
   }
 </script>
 

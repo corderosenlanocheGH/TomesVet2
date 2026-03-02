@@ -68,6 +68,69 @@
                 <tr><th>Análisis solicitados</th><td><%= showValue(historia.analisis_solicitados) %></td></tr>
                 <tr><th>Tratamiento y medicación</th><td><%= showValue(historia.tratamiento) %></td></tr>
                 <tr><th>Otros Datos</th><td><%= showValue(historia.otros_datos) %></td></tr>
+                <tr>
+                  <th>Documentación adjunta</th>
+                  <td>
+                    <% if (documentos && documentos.length) { %>
+                      <div class="d-grid gap-3">
+                        <% documentos.forEach((documento) => { %>
+                          <div class="border rounded p-2">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                              <strong><%= documento.nombre_original %></strong>
+                              <a
+                                class="btn btn-sm btn-outline-primary"
+                                href="<%= documento.ruta_publica %>"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Ver PDF
+                              </a>
+                            </div>
+                            <iframe
+                              src="<%= documento.ruta_publica %>"
+                              title="Documentación adjunta"
+                              width="100%"
+                              height="380"
+                              class="border rounded"
+                            ></iframe>
+                          </div>
+                        <% }) %>
+                      </div>
+                    <% } else { %>
+                      -
+                    <% } %>
+
+                    <form
+                      action="/historia-clinica/<%= historia.id %>/documentos"
+                      method="POST"
+                      class="mt-3 d-grid gap-2"
+                      id="historia-documento-form"
+                    >
+                      <label class="form-label mb-0">Agregar documentación adjunta (PDF)</label>
+                      <input
+                        class="form-control"
+                        type="file"
+                        name="documentacion_adjunta"
+                        id="historia-documento-adjunta"
+                        accept="application/pdf,.pdf"
+                        required
+                      />
+                      <input
+                        type="hidden"
+                        name="documentacion_adjunta_nombre"
+                        id="historia-documento-adjunta-nombre"
+                      />
+                      <input
+                        type="hidden"
+                        name="documentacion_adjunta_base64"
+                        id="historia-documento-adjunta-base64"
+                      />
+                      <div>
+                        <button class="btn btn-sm btn-primary" type="submit">Agregar PDF</button>
+                      </div>
+                    </form>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -76,5 +139,38 @@
     </div>
   </div>
 </main>
+
+<script>
+  const historiaDocumentoForm = document.getElementById('historia-documento-form');
+  const historiaDocumentoInput = document.getElementById('historia-documento-adjunta');
+  const historiaDocumentoNombre = document.getElementById('historia-documento-adjunta-nombre');
+  const historiaDocumentoBase64 = document.getElementById('historia-documento-adjunta-base64');
+
+  if (historiaDocumentoForm && historiaDocumentoInput && historiaDocumentoNombre && historiaDocumentoBase64) {
+    historiaDocumentoForm.addEventListener('submit', async (event) => {
+      const [file] = historiaDocumentoInput.files || [];
+      if (!file) return;
+
+      if (file.type !== 'application/pdf' || !file.name.toLowerCase().endsWith('.pdf')) {
+        event.preventDefault();
+        alert('La documentación adjunta debe ser un archivo PDF válido.');
+        return;
+      }
+
+      event.preventDefault();
+
+      const encodedFile = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('No se pudo leer el archivo adjunto.'));
+        reader.readAsDataURL(file);
+      });
+
+      historiaDocumentoNombre.value = file.name;
+      historiaDocumentoBase64.value = encodedFile;
+      historiaDocumentoForm.submit();
+    });
+  }
+</script>
 
 <%- include('partials/footer') %>

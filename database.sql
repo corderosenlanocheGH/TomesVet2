@@ -50,7 +50,20 @@ CREATE TABLE IF NOT EXISTS historia_clinica (
   analisis_solicitados TEXT,
   tratamiento TEXT,
   otros_datos TEXT,
+  documento_adjunto_nombre VARCHAR(255),
+  documento_adjunto_ruta VARCHAR(255),
   CONSTRAINT fk_historia_mascota FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
+);
+
+CREATE TABLE IF NOT EXISTS historia_clinica_documentos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  historia_clinica_id INT NOT NULL,
+  nombre_original VARCHAR(255) NOT NULL,
+  ruta_publica VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_historia_documento_historia
+    FOREIGN KEY (historia_clinica_id) REFERENCES historia_clinica(id)
+    ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS vacunas_tipos (

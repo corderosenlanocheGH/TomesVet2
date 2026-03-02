@@ -750,6 +750,47 @@ app.get(
   })
 );
 
+app.get(
+  '/historia-clinica/mascota/:mascotaId/imprimir',
+  asyncHandler(async (req, res) => {
+    const mascotaId = Number(req.params.mascotaId);
+
+    if (!Number.isInteger(mascotaId) || mascotaId <= 0) {
+      return res.status(400).render('error', {
+        message: 'La mascota indicada no es válida.',
+      });
+    }
+
+    const [mascotas] = await pool.query(
+      `SELECT id, nombre, especie, raza, sexo, tamanio
+       FROM mascotas
+       WHERE id = ?`,
+      [mascotaId]
+    );
+
+    if (!mascotas.length) {
+      return res.status(404).render('error', {
+        message: 'La mascota solicitada no existe.',
+      });
+    }
+
+    const [historias] = await pool.query(
+      `SELECT *
+       FROM historia_clinica
+       WHERE mascota_id = ?
+       ORDER BY fecha DESC, id DESC`,
+      [mascotaId]
+    );
+
+    const configuracionClinica = await getConfiguracionClinica();
+    return res.render('historia-mascota-print', {
+      mascota: mascotas[0],
+      historias,
+      configuracionClinica,
+    });
+  })
+);
+
 app.post(
   '/historia-clinica',
   asyncHandler(async (req, res) => {

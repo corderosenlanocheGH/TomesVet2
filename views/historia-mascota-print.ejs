@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Historia clínica completa | <%= mascota.nombre %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+      body {
+        padding: 1.5rem;
+      }
+
+      .header {
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+      }
+
+      .clinic-logo {
+        max-height: 70px;
+        max-width: 180px;
+        width: auto;
+      }
+
+      .historia-item {
+        page-break-inside: avoid;
+      }
+
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+
+        body {
+          padding: 0;
+        }
+
+        .historia-item {
+          page-break-after: always;
+        }
+
+        .historia-item:last-child {
+          page-break-after: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <%
+      const formatShortDate = (value = '') => {
+        if (!value) return '-';
+        const normalized = value.toString().split('T')[0];
+        const [year, month, day] = normalized.split('-');
+        if (year && month && day) {
+          return `${day}/${month}/${year}`;
+        }
+        const parsed = new Date(value);
+        if (!Number.isNaN(parsed.getTime())) {
+          return parsed.toLocaleDateString('es-AR');
+        }
+        return value;
+      };
+
+      const showValue = (value) => value || '-';
+    %>
+
+    <div class="d-flex justify-content-between align-items-start header gap-3">
+      <div>
+        <% if (configuracionClinica.logo_ruta) { %>
+          <img src="<%= configuracionClinica.logo_ruta %>" alt="Logo veterinaria" class="clinic-logo mb-2" />
+        <% } %>
+        <h3 class="mb-1">Historia clínica completa</h3>
+        <p class="text-muted mb-0"><%= configuracionClinica.veterinaria_nombre || 'TomesVet' %></p>
+        <% if (configuracionClinica.medica_nombre) { %>
+          <p class="text-muted mb-0">Médica: <%= configuracionClinica.medica_nombre %></p>
+        <% } %>
+        <% if (configuracionClinica.medica_matricula) { %>
+          <p class="text-muted mb-0">Matrícula: <%= configuracionClinica.medica_matricula %></p>
+        <% } %>
+      </div>
+      <div class="text-end">
+        <p class="mb-0"><strong>Mascota:</strong> <%= mascota.nombre %></p>
+        <p class="mb-0"><strong>Especie:</strong> <%= showValue(mascota.especie) %></p>
+        <p class="mb-0"><strong>Raza:</strong> <%= showValue(mascota.raza) %></p>
+      </div>
+    </div>
+
+    <div class="mb-3 no-print">
+      <button class="btn btn-primary" onclick="window.print()">Imprimir / Guardar como PDF</button>
+    </div>
+
+    <% if (!historias.length) { %>
+      <p>No hay historias clínicas cargadas para esta mascota.</p>
+    <% } %>
+
+    <% historias.forEach((historia, index) => { %>
+      <section class="historia-item mb-4">
+        <h5 class="mb-3">Ficha #<%= historia.id %> - <%= formatShortDate(historia.fecha) %></h5>
+        <table class="table table-bordered align-middle mb-0">
+          <tbody>
+            <tr><th style="width: 30%">Motivo</th><td><%= showValue(historia.motivo) %></td></tr>
+            <tr><th>Aspecto general</th><td><%= showValue(historia.aspecto_general) %></td></tr>
+            <tr><th>Estado de nutrición</th><td><%= showValue(historia.estado_nutricion) %></td></tr>
+            <tr><th>Última desparacitación</th><td><%= formatShortDate(historia.ultima_desparacitacion) %></td></tr>
+            <tr>
+              <th>Parámetros</th>
+              <td>
+                FC: <%= showValue(historia.frecuencia_cardiaca) %><br />
+                FR: <%= showValue(historia.frecuencia_respiratoria) %><br />
+                Hidratación: <%= showValue(historia.hidratacion) %><br />
+                Temperatura: <%= showValue(historia.temperatura) %>
+              </td>
+            </tr>
+            <tr>
+              <th>Estado de mucosa</th>
+              <td>
+                Palpebral: <%= showValue(historia.mucosa_palpebral) %><br />
+                Escleral: <%= showValue(historia.mucosa_escleral) %><br />
+                Bucal: <%= showValue(historia.mucosa_bucal) %><br />
+                Vul/Pen: <%= showValue(historia.mucosa_vulpen) %>
+              </td>
+            </tr>
+            <tr><th>Diagnóstico presuntivo</th><td><%= showValue(historia.diagnostico_presuntivo) %></td></tr>
+            <tr><th>Diagnóstico diferencial</th><td><%= showValue(historia.diagnostico_diferencial) %></td></tr>
+            <tr><th>Diagnóstico definitivo</th><td><%= showValue(historia.diagnostico_definitivo) %></td></tr>
+            <tr><th>Análisis solicitados</th><td><%= showValue(historia.analisis_solicitados) %></td></tr>
+            <tr><th>Tratamiento y medicación</th><td><%= showValue(historia.tratamiento) %></td></tr>
+            <tr><th>Otros Datos</th><td><%= showValue(historia.otros_datos) %></td></tr>
+          </tbody>
+        </table>
+      </section>
+      <% if (index < historias.length - 1) { %>
+        <hr />
+      <% } %>
+    <% }) %>
+  </body>
+</html>

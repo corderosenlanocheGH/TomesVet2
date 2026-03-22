@@ -1,5 +1,6 @@
 <%- include('partials/head', { title: 'Certificados | TomesVet' }) %>
 <%
+  const activeTab = selectedCertificateType || 'leishmaniasis';
   const formatInputDate = (value = '') => {
     if (!value) return '';
     const normalized = value.toString().split('T')[0];
@@ -19,211 +20,701 @@
     if (year && month && day) {
       return `${day}/${month}/${year}`;
     }
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString('es-AR');
+    }
     return value;
+  };
+  const formatDateTime = (value = '') => {
+    if (!value) return '-';
+    const match = value.toString().match(/^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/);
+    if (match) {
+      return `${formatShortDate(match[1])} ${match[2]}`;
+    }
+    return value;
+  };
+  const truncateText = (value = '', max = 70) => {
+    if (!value) return '-';
+    return value.length > max ? `${value.slice(0, max - 1)}…` : value;
+  };
+  const typeConfigs = [
+    {
+      key: 'leishmaniasis',
+      label: 'Leishmaniasis',
+      badgeClass: 'text-bg-success',
+      description: 'Certificado con resultado diagnóstico y generación de PDF.',
+      records: certificadosLeishmaniasis,
+    },
+    {
+      key: 'tratamiento_antiparasitario',
+      label: 'Tratamiento antiparasitario',
+      badgeClass: 'text-bg-primary',
+      description: 'Incluye antiparasitario interno, externo y observaciones.',
+      records: certificadosTratamientosAntiparasitarios,
+    },
+    {
+      key: 'implantacion_microchip_tatuaje',
+      label: 'Implantación microchip / tatuaje',
+      badgeClass: 'text-bg-info',
+      description: 'Registra la implantación o tatuaje con región anatómica.',
+      records: certificadosImplantacionMicrochip,
+    },
+    {
+      key: 'lectura_microchip_tatuaje',
+      label: 'Lectura microchip / tatuaje',
+      badgeClass: 'text-bg-warning',
+      description: 'Certifica la lectura actual del microchip o tatuaje.',
+      records: certificadosLecturaMicrochip,
+    },
+    {
+      key: 'libre_miasis',
+      label: 'Libre de miasis',
+      badgeClass: 'text-bg-secondary',
+      description: 'Certificado sanitario con declaración de libre de miasis.',
+      records: certificadosLibreMiasis,
+    },
+  ];
+  const pdfPathByType = {
+    leishmaniasis: (id) => `/certificados/leishmaniasis/${id}/pdf`,
+    tratamiento_antiparasitario: (id) => `/certificados/tratamiento-antiparasitario/${id}/pdf`,
+    implantacion_microchip_tatuaje: (id) => `/certificados/implantacion-microchip-tatuaje/${id}/pdf`,
+    lectura_microchip_tatuaje: (id) => `/certificados/lectura-microchip-tatuaje/${id}/pdf`,
+    libre_miasis: (id) => `/certificados/libre-miasis/${id}/pdf`,
+  };
+  const summaryByType = (type, certificado) => {
+    switch (type) {
+      case 'leishmaniasis':
+        return certificado.resultado || 'Sin resultado';
+      case 'tratamiento_antiparasitario':
+        return `Interno: ${formatDateTime(certificado.interno_fecha_hora)} · Externo: ${formatDateTime(certificado.externo_fecha_hora)}`;
+      case 'implantacion_microchip_tatuaje':
+        return `Microchip: ${certificado.animal_microchip || '-'} · ${truncateText(certificado.lugar_implantacion || '', 36)}`;
+      case 'lectura_microchip_tatuaje':
+        return truncateText(certificado.detalle_lectura || 'Lectura certificada');
+      case 'libre_miasis':
+        return 'Animal declarado libre de miasis';
+      default:
+        return '-';
+    }
+  };
+  const dateByType = (type, certificado) => {
+    switch (type) {
+      case 'leishmaniasis':
+        return formatShortDate(certificado.fecha_resultado);
+      case 'tratamiento_antiparasitario':
+        return formatShortDate(certificado.created_at);
+      case 'implantacion_microchip_tatuaje':
+        return formatShortDate(certificado.fecha_implantacion);
+      case 'lectura_microchip_tatuaje':
+      case 'libre_miasis':
+        return formatShortDate(certificado.created_at);
+      default:
+        return '-';
+    }
   };
 %>
 <%- include('partials/nav') %>
 
 <main class="content-area">
-  <div class="row g-4">
-    <div class="col-xl-5">
-      <div class="card border-0 shadow-sm mb-4">
+  <div class="row g-4 align-items-start">
+    <div class="col-xl-4">
+      <div class="card border-0 shadow-sm cert-types-card sticky-xl-top" style="top: 1.5rem;">
         <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-            <div>
-              <p class="text-uppercase text-muted small mb-1">Nueva sección</p>
-              <h3 class="card-title mb-1">Certificados</h3>
-              <p class="text-muted mb-0">Certificado de leishmaniasis con guardado en base de datos y PDF.</p>
-            </div>
-            <span class="badge text-bg-success">Leishmaniasis</span>
+          <p class="text-uppercase text-muted small mb-1">Nueva sección</p>
+          <h3 class="card-title mb-2">Certificados</h3>
+          <p class="text-muted mb-4">Se agregaron cuatro modelos nuevos, siguiendo el formato del certificado de leishmaniasis.</p>
+
+          <div class="nav flex-column nav-pills gap-2" id="certificados-tab" role="tablist" aria-orientation="vertical">
+            <% typeConfigs.forEach((type) => { %>
+              <button
+                class="nav-link d-flex justify-content-between align-items-start text-start <%= activeTab === type.key ? 'active' : '' %>"
+                id="tab-<%= type.key %>"
+                data-bs-toggle="pill"
+                data-bs-target="#pane-<%= type.key %>"
+                type="button"
+                role="tab"
+                aria-controls="pane-<%= type.key %>"
+                aria-selected="<%= activeTab === type.key ? 'true' : 'false' %>"
+              >
+                <span>
+                  <span class="d-block fw-semibold"><%= type.label %></span>
+                  <small class="d-block opacity-75"><%= type.description %></small>
+                </span>
+                <span class="badge rounded-pill <%= type.badgeClass %>"><%= type.records.length %></span>
+              </button>
+            <% }) %>
           </div>
-
-          <form action="/certificados/leishmaniasis" method="POST" class="d-grid gap-3" id="certificado-form">
-            <div>
-              <label class="form-label">Mascota</label>
-              <select class="form-select" name="mascota_id" id="certificado-mascota" required>
-                <option value="" disabled selected>Selecciona una mascota</option>
-                <% mascotas.forEach((mascota) => { %>
-                  <option
-                    value="<%= mascota.id %>"
-                    data-propietario="<%= mascota.cliente_nombre || '' %>"
-                    data-direccion="<%= mascota.cliente_direccion || '' %>"
-                    data-nombre="<%= mascota.nombre || '' %>"
-                    data-especie="<%= mascota.especie || '' %>"
-                    data-raza="<%= mascota.raza || '' %>"
-                    data-sexo="<%= mascota.sexo || '' %>"
-                    data-pelaje="<%= mascota.color || '' %>"
-                    data-fecha-nacimiento="<%= formatInputDate(mascota.fecha_nacimiento) %>"
-                    <%= selectedMascotaId === String(mascota.id) ? 'selected' : '' %>
-                  >
-                    <%= mascota.nombre %> · <%= mascota.cliente_nombre %>
-                  </option>
-                <% }) %>
-              </select>
-            </div>
-
-            <div class="cert-grid">
-              <div>
-                <label class="form-label">Propietario</label>
-                <input class="form-control" type="text" name="propietario_nombre" id="cert-propietario" required />
-              </div>
-              <div>
-                <label class="form-label">Dirección</label>
-                <input class="form-control" type="text" name="propietario_direccion" id="cert-direccion" />
-              </div>
-              <div>
-                <label class="form-label">Tipo documento</label>
-                <input class="form-control" type="text" name="propietario_documento_tipo" placeholder="DNI / Pasaporte" />
-              </div>
-              <div>
-                <label class="form-label">N° documento</label>
-                <input class="form-control" type="text" name="propietario_documento_numero" />
-              </div>
-            </div>
-
-            <div class="cert-section-title">Datos del animal</div>
-            <div class="cert-grid">
-              <div>
-                <label class="form-label">Nombre</label>
-                <input class="form-control" type="text" name="animal_nombre" id="cert-animal-nombre" required />
-              </div>
-              <div>
-                <label class="form-label">Especie</label>
-                <input class="form-control" type="text" name="animal_especie" id="cert-animal-especie" value="Canino" required />
-              </div>
-              <div>
-                <label class="form-label">Sexo</label>
-                <select class="form-select" name="animal_sexo" id="cert-animal-sexo">
-                  <option value="">Selecciona</option>
-                  <option value="Macho">Macho</option>
-                  <option value="Hembra">Hembra</option>
-                </select>
-              </div>
-              <div>
-                <label class="form-label">Condición sexual</label>
-                <select class="form-select" name="animal_condicion_reproductiva">
-                  <option value="">Selecciona</option>
-                  <option value="Entero">Entero</option>
-                  <option value="Castrado">Castrado</option>
-                </select>
-              </div>
-              <div>
-                <label class="form-label">Edad (años y meses)</label>
-                <input class="form-control" type="text" name="animal_edad" placeholder="Ej. 2 años y 3 meses" />
-              </div>
-              <div>
-                <label class="form-label">Fecha de nacimiento</label>
-                <input class="form-control" type="date" name="animal_fecha_nacimiento" id="cert-animal-fecha-nacimiento" />
-              </div>
-              <div>
-                <label class="form-label">Peso</label>
-                <input class="form-control" type="text" name="animal_peso" placeholder="Ej. 18 kg" />
-              </div>
-              <div>
-                <label class="form-label">Raza</label>
-                <input class="form-control" type="text" name="animal_raza" id="cert-animal-raza" />
-              </div>
-              <div>
-                <label class="form-label">Pelaje</label>
-                <input class="form-control" type="text" name="animal_pelaje" id="cert-animal-pelaje" />
-              </div>
-              <div>
-                <label class="form-label">Microchip</label>
-                <input class="form-control" type="text" name="animal_microchip" />
-              </div>
-            </div>
-
-            <div class="cert-section-title">Datos de la muestra</div>
-            <div class="cert-grid">
-              <div>
-                <label class="form-label">Fecha de toma de muestra</label>
-                <input class="form-control" type="date" name="fecha_toma_muestra" />
-              </div>
-              <div>
-                <label class="form-label">Fecha de resultado</label>
-                <input class="form-control" type="date" name="fecha_resultado" />
-              </div>
-              <div>
-                <label class="form-label">Método diagnóstico</label>
-                <input class="form-control" type="text" name="metodo_diagnostico" />
-              </div>
-              <div>
-                <label class="form-label">Laboratorio diagnóstico</label>
-                <input class="form-control" type="text" name="laboratorio_diagnostico" />
-              </div>
-              <div>
-                <label class="form-label">Resultado</label>
-                <input class="form-control" type="text" name="resultado" value="<%= certificadoResultadoDefault %>" />
-              </div>
-              <div>
-                <label class="form-label">Lugar y fecha</label>
-                <input class="form-control" type="text" name="lugar_fecha" placeholder="Ej. Chaco, 22/03/2026" />
-              </div>
-            </div>
-
-            <div class="d-flex gap-2">
-              <button class="btn btn-primary" type="submit">Guardar certificado</button>
-              <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
-            </div>
-          </form>
         </div>
       </div>
     </div>
 
-    <div class="col-xl-7">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-            <div>
-              <h4 class="card-title mb-1">Certificados emitidos</h4>
-              <p class="text-muted mb-0">Listado de certificados de leishmaniasis guardados.</p>
+    <div class="col-xl-8">
+      <div class="tab-content d-grid gap-4" id="certificados-tabContent">
+        <div class="tab-pane fade <%= activeTab === 'leishmaniasis' ? 'show active' : '' %>" id="pane-leishmaniasis" role="tabpanel" aria-labelledby="tab-leishmaniasis" tabindex="0">
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                  <h4 class="card-title mb-1">Certificado de leishmaniasis</h4>
+                  <p class="text-muted mb-0">Modelo con guardado en base de datos y PDF.</p>
+                </div>
+                <span class="badge text-bg-success">Leishmaniasis</span>
+              </div>
+
+              <form action="/certificados/leishmaniasis" method="POST" class="d-grid gap-3 js-cert-form" data-cert-type="leishmaniasis">
+                <input type="hidden" name="tipo_certificado" value="leishmaniasis" />
+                <div>
+                  <label class="form-label">Mascota</label>
+                  <select class="form-select js-cert-mascota" name="mascota_id" required>
+                    <option value="" disabled selected>Selecciona una mascota</option>
+                    <% mascotas.forEach((mascota) => { %>
+                      <option
+                        value="<%= mascota.id %>"
+                        data-propietario="<%= mascota.cliente_nombre || '' %>"
+                        data-direccion="<%= mascota.cliente_direccion || '' %>"
+                        data-nombre="<%= mascota.nombre || '' %>"
+                        data-especie="<%= mascota.especie || '' %>"
+                        data-raza="<%= mascota.raza || '' %>"
+                        data-sexo="<%= mascota.sexo || '' %>"
+                        data-pelaje="<%= mascota.color || '' %>"
+                        data-fecha-nacimiento="<%= formatInputDate(mascota.fecha_nacimiento) %>"
+                        <%= selectedMascotaId === String(mascota.id) ? 'selected' : '' %>
+                      >
+                        <%= mascota.nombre %> · <%= mascota.cliente_nombre %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
+
+                <div class="cert-grid">
+                  <div>
+                    <label class="form-label">Propietario</label>
+                    <input class="form-control" type="text" name="propietario_nombre" data-field="propietario" required />
+                  </div>
+                  <div>
+                    <label class="form-label">Dirección</label>
+                    <input class="form-control" type="text" name="propietario_direccion" data-field="direccion" />
+                  </div>
+                  <div>
+                    <label class="form-label">Tipo documento</label>
+                    <input class="form-control" type="text" name="propietario_documento_tipo" placeholder="DNI / Pasaporte" />
+                  </div>
+                  <div>
+                    <label class="form-label">N° documento</label>
+                    <input class="form-control" type="text" name="propietario_documento_numero" />
+                  </div>
+                </div>
+
+                <div class="cert-section-title">Datos del animal</div>
+                <div class="cert-grid">
+                  <div>
+                    <label class="form-label">Nombre</label>
+                    <input class="form-control" type="text" name="animal_nombre" data-field="animal-nombre" required />
+                  </div>
+                  <div>
+                    <label class="form-label">Especie</label>
+                    <input class="form-control" type="text" name="animal_especie" data-field="animal-especie" value="Canino" required />
+                  </div>
+                  <div>
+                    <label class="form-label">Sexo</label>
+                    <select class="form-select" name="animal_sexo" data-field="animal-sexo">
+                      <option value="">Selecciona</option>
+                      <option value="Macho">Macho</option>
+                      <option value="Hembra">Hembra</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label">Condición sexual</label>
+                    <select class="form-select" name="animal_condicion_reproductiva">
+                      <option value="">Selecciona</option>
+                      <option value="Entero">Entero</option>
+                      <option value="Castrado">Castrado</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label">Edad (años y meses)</label>
+                    <input class="form-control" type="text" name="animal_edad" />
+                  </div>
+                  <div>
+                    <label class="form-label">Fecha de nacimiento</label>
+                    <input class="form-control" type="date" name="animal_fecha_nacimiento" data-field="animal-fecha-nacimiento" />
+                  </div>
+                  <div>
+                    <label class="form-label">Peso</label>
+                    <input class="form-control" type="text" name="animal_peso" />
+                  </div>
+                  <div>
+                    <label class="form-label">Raza</label>
+                    <input class="form-control" type="text" name="animal_raza" data-field="animal-raza" />
+                  </div>
+                  <div>
+                    <label class="form-label">Pelaje</label>
+                    <input class="form-control" type="text" name="animal_pelaje" data-field="animal-pelaje" />
+                  </div>
+                  <div>
+                    <label class="form-label">Microchip</label>
+                    <input class="form-control" type="text" name="animal_microchip" />
+                  </div>
+                </div>
+
+                <div class="cert-section-title">Datos de la muestra</div>
+                <div class="cert-grid">
+                  <div>
+                    <label class="form-label">Fecha de toma de muestra</label>
+                    <input class="form-control" type="date" name="fecha_toma_muestra" />
+                  </div>
+                  <div>
+                    <label class="form-label">Fecha de resultado</label>
+                    <input class="form-control" type="date" name="fecha_resultado" />
+                  </div>
+                  <div>
+                    <label class="form-label">Método diagnóstico</label>
+                    <input class="form-control" type="text" name="metodo_diagnostico" />
+                  </div>
+                  <div>
+                    <label class="form-label">Laboratorio diagnóstico</label>
+                    <input class="form-control" type="text" name="laboratorio_diagnostico" />
+                  </div>
+                  <div>
+                    <label class="form-label">Resultado</label>
+                    <input class="form-control" type="text" name="resultado" value="<%= certificadoResultadoDefault %>" />
+                  </div>
+                  <div>
+                    <label class="form-label">Lugar y fecha</label>
+                    <input class="form-control" type="text" name="lugar_fecha" placeholder="Ej. Chaco, 22/03/2026" />
+                  </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                  <button class="btn btn-primary" type="submit">Guardar certificado</button>
+                  <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
+                </div>
+              </form>
             </div>
           </div>
+        </div>
 
-          <div class="table-responsive">
-            <table class="table align-middle">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Mascota</th>
-                  <th>Propietario</th>
-                  <th>Resultado</th>
-                  <th>Fecha resultado</th>
-                  <th class="text-end">PDF</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% if (!certificados.length) { %>
-                  <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
-                      Todavía no hay certificados cargados.
-                    </td>
-                  </tr>
-                <% } %>
-                <% certificados.forEach((certificado) => { %>
-                  <tr>
-                    <td>#<%= certificado.id %></td>
-                    <td>
-                      <div class="fw-semibold"><%= certificado.animal_nombre || certificado.mascota_nombre %></div>
-                      <small class="text-muted"><%= certificado.animal_raza || '-' %></small>
-                    </td>
-                    <td><%= certificado.propietario_nombre %></td>
-                    <td><span class="badge text-bg-success"><%= certificado.resultado %></span></td>
-                    <td><%= formatShortDate(certificado.fecha_resultado) %></td>
-                    <td class="text-end">
-                      <a
-                        class="btn btn-sm btn-outline-primary"
-                        href="/certificados/leishmaniasis/<%= certificado.id %>/pdf"
-                        target="_blank"
-                        rel="noopener noreferrer"
+        <div class="tab-pane fade <%= activeTab === 'tratamiento_antiparasitario' ? 'show active' : '' %>" id="pane-tratamiento_antiparasitario" role="tabpanel" aria-labelledby="tab-tratamiento_antiparasitario" tabindex="0">
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                  <h4 class="card-title mb-1">Certificado de tratamiento antiparasitario</h4>
+                  <p class="text-muted mb-0">Replica el modelo SENASA con bloques para antiparasitario interno y externo.</p>
+                </div>
+                <span class="badge text-bg-primary">Antiparasitario</span>
+              </div>
+
+              <form action="/certificados/tratamiento-antiparasitario" method="POST" class="d-grid gap-3 js-cert-form" data-cert-type="tratamiento_antiparasitario">
+                <input type="hidden" name="tipo_certificado" value="tratamiento_antiparasitario" />
+                <div>
+                  <label class="form-label">Mascota</label>
+                  <select class="form-select js-cert-mascota" name="mascota_id" required>
+                    <option value="" disabled selected>Selecciona una mascota</option>
+                    <% mascotas.forEach((mascota) => { %>
+                      <option
+                        value="<%= mascota.id %>"
+                        data-propietario="<%= mascota.cliente_nombre || '' %>"
+                        data-direccion="<%= mascota.cliente_direccion || '' %>"
+                        data-nombre="<%= mascota.nombre || '' %>"
+                        data-especie="<%= mascota.especie || '' %>"
+                        data-raza="<%= mascota.raza || '' %>"
+                        data-sexo="<%= mascota.sexo || '' %>"
+                        data-pelaje="<%= mascota.color || '' %>"
+                        data-fecha-nacimiento="<%= formatInputDate(mascota.fecha_nacimiento) %>"
+                        <%= selectedMascotaId === String(mascota.id) ? 'selected' : '' %>
                       >
-                        Generar PDF
-                      </a>
-                    </td>
+                        <%= mascota.nombre %> · <%= mascota.cliente_nombre %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
+
+                <div class="cert-grid">
+                  <div>
+                    <label class="form-label">Propietario</label>
+                    <input class="form-control" type="text" name="propietario_nombre" data-field="propietario" required />
+                  </div>
+                  <div>
+                    <label class="form-label">Dirección</label>
+                    <input class="form-control" type="text" name="propietario_direccion" data-field="direccion" />
+                  </div>
+                  <div>
+                    <label class="form-label">Tipo documento</label>
+                    <input class="form-control" type="text" name="propietario_documento_tipo" />
+                  </div>
+                  <div>
+                    <label class="form-label">N° documento</label>
+                    <input class="form-control" type="text" name="propietario_documento_numero" />
+                  </div>
+                </div>
+
+                <div class="cert-section-title">Datos del animal</div>
+                <div class="cert-grid">
+                  <div><label class="form-label">Nombre</label><input class="form-control" type="text" name="animal_nombre" data-field="animal-nombre" required /></div>
+                  <div><label class="form-label">Especie</label><input class="form-control" type="text" name="animal_especie" data-field="animal-especie" value="Canino" required /></div>
+                  <div>
+                    <label class="form-label">Sexo</label>
+                    <select class="form-select" name="animal_sexo" data-field="animal-sexo">
+                      <option value="">Selecciona</option>
+                      <option value="Macho">Macho</option>
+                      <option value="Hembra">Hembra</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label">Condición sexual</label>
+                    <select class="form-select" name="animal_condicion_reproductiva">
+                      <option value="">Selecciona</option>
+                      <option value="Entero">Entero</option>
+                      <option value="Castrado">Castrado</option>
+                    </select>
+                  </div>
+                  <div><label class="form-label">Edad</label><input class="form-control" type="text" name="animal_edad" /></div>
+                  <div><label class="form-label">Fecha de nacimiento</label><input class="form-control" type="date" name="animal_fecha_nacimiento" data-field="animal-fecha-nacimiento" /></div>
+                  <div><label class="form-label">Peso</label><input class="form-control" type="text" name="animal_peso" /></div>
+                  <div><label class="form-label">Raza</label><input class="form-control" type="text" name="animal_raza" data-field="animal-raza" /></div>
+                  <div><label class="form-label">Pelaje</label><input class="form-control" type="text" name="animal_pelaje" data-field="animal-pelaje" /></div>
+                  <div><label class="form-label">Microchip</label><input class="form-control" type="text" name="animal_microchip" /></div>
+                </div>
+
+                <div class="cert-section-title">Antiparasitario interno</div>
+                <div class="cert-grid">
+                  <div><label class="form-label">Fecha y hora</label><input class="form-control" type="datetime-local" name="interno_fecha_hora" /></div>
+                  <div><label class="form-label">Nombre comercial y laboratorio</label><input class="form-control" type="text" name="interno_nombre_comercial" /></div>
+                  <div><label class="form-label">Composición (drogas)</label><input class="form-control" type="text" name="interno_composicion" /></div>
+                  <div><label class="form-label">Dosis administrada</label><input class="form-control" type="text" name="interno_dosis" /></div>
+                  <div><label class="form-label">Vía de administración</label><input class="form-control" type="text" name="interno_via" /></div>
+                  <div><label class="form-label">Lugar y fecha</label><input class="form-control" type="text" name="lugar_fecha" /></div>
+                </div>
+
+                <div class="cert-section-title">Antiparasitario externo</div>
+                <div class="cert-grid">
+                  <div><label class="form-label">Fecha y hora</label><input class="form-control" type="datetime-local" name="externo_fecha_hora" /></div>
+                  <div><label class="form-label">Nombre comercial y laboratorio</label><input class="form-control" type="text" name="externo_nombre_comercial" /></div>
+                  <div><label class="form-label">Composición (drogas)</label><input class="form-control" type="text" name="externo_composicion" /></div>
+                  <div><label class="form-label">Dosis administrada</label><input class="form-control" type="text" name="externo_dosis" /></div>
+                  <div><label class="form-label">Vía de administración</label><input class="form-control" type="text" name="externo_via" /></div>
+                  <div class="cert-grid-span-2"><label class="form-label">Observaciones</label><textarea class="form-control" name="observaciones" rows="3"></textarea></div>
+                </div>
+
+                <div class="d-flex gap-2">
+                  <button class="btn btn-primary" type="submit">Guardar certificado</button>
+                  <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-pane fade <%= activeTab === 'implantacion_microchip_tatuaje' ? 'show active' : '' %>" id="pane-implantacion_microchip_tatuaje" role="tabpanel" aria-labelledby="tab-implantacion_microchip_tatuaje" tabindex="0">
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                  <h4 class="card-title mb-1">Certificado de implantación de microchip y/o tatuaje</h4>
+                  <p class="text-muted mb-0">Incluye fecha de implantación y ubicación anatómica.</p>
+                </div>
+                <span class="badge text-bg-info">Microchip</span>
+              </div>
+
+              <form action="/certificados/implantacion-microchip-tatuaje" method="POST" class="d-grid gap-3 js-cert-form" data-cert-type="implantacion_microchip_tatuaje">
+                <input type="hidden" name="tipo_certificado" value="implantacion_microchip_tatuaje" />
+                <div>
+                  <label class="form-label">Mascota</label>
+                  <select class="form-select js-cert-mascota" name="mascota_id" required>
+                    <option value="" disabled selected>Selecciona una mascota</option>
+                    <% mascotas.forEach((mascota) => { %>
+                      <option
+                        value="<%= mascota.id %>"
+                        data-propietario="<%= mascota.cliente_nombre || '' %>"
+                        data-direccion="<%= mascota.cliente_direccion || '' %>"
+                        data-nombre="<%= mascota.nombre || '' %>"
+                        data-especie="<%= mascota.especie || '' %>"
+                        data-raza="<%= mascota.raza || '' %>"
+                        data-sexo="<%= mascota.sexo || '' %>"
+                        data-pelaje="<%= mascota.color || '' %>"
+                        data-fecha-nacimiento="<%= formatInputDate(mascota.fecha_nacimiento) %>"
+                        <%= selectedMascotaId === String(mascota.id) ? 'selected' : '' %>
+                      >
+                        <%= mascota.nombre %> · <%= mascota.cliente_nombre %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
+
+                <div class="cert-grid">
+                  <div><label class="form-label">Propietario</label><input class="form-control" type="text" name="propietario_nombre" data-field="propietario" required /></div>
+                  <div><label class="form-label">Dirección</label><input class="form-control" type="text" name="propietario_direccion" data-field="direccion" /></div>
+                  <div><label class="form-label">Tipo documento</label><input class="form-control" type="text" name="propietario_documento_tipo" /></div>
+                  <div><label class="form-label">N° documento</label><input class="form-control" type="text" name="propietario_documento_numero" /></div>
+                </div>
+
+                <div class="cert-section-title">Datos del animal</div>
+                <div class="cert-grid">
+                  <div><label class="form-label">Nombre</label><input class="form-control" type="text" name="animal_nombre" data-field="animal-nombre" required /></div>
+                  <div><label class="form-label">Especie</label><input class="form-control" type="text" name="animal_especie" data-field="animal-especie" value="Canino" required /></div>
+                  <div>
+                    <label class="form-label">Sexo</label>
+                    <select class="form-select" name="animal_sexo" data-field="animal-sexo">
+                      <option value="">Selecciona</option>
+                      <option value="Macho">Macho</option>
+                      <option value="Hembra">Hembra</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label">Condición sexual</label>
+                    <select class="form-select" name="animal_condicion_reproductiva">
+                      <option value="">Selecciona</option>
+                      <option value="Entero">Entero</option>
+                      <option value="Castrado">Castrado</option>
+                    </select>
+                  </div>
+                  <div><label class="form-label">Edad</label><input class="form-control" type="text" name="animal_edad" /></div>
+                  <div><label class="form-label">Fecha de nacimiento</label><input class="form-control" type="date" name="animal_fecha_nacimiento" data-field="animal-fecha-nacimiento" /></div>
+                  <div><label class="form-label">Peso</label><input class="form-control" type="text" name="animal_peso" /></div>
+                  <div><label class="form-label">Raza</label><input class="form-control" type="text" name="animal_raza" data-field="animal-raza" /></div>
+                  <div><label class="form-label">Pelaje</label><input class="form-control" type="text" name="animal_pelaje" data-field="animal-pelaje" /></div>
+                  <div><label class="form-label">Microchip</label><input class="form-control" type="text" name="animal_microchip" /></div>
+                </div>
+
+                <div class="cert-section-title">Datos de implantación / tatuaje</div>
+                <div class="cert-grid">
+                  <div><label class="form-label">Fecha de implantación</label><input class="form-control" type="date" name="fecha_implantacion" /></div>
+                  <div><label class="form-label">Lugar y fecha</label><input class="form-control" type="text" name="lugar_fecha" /></div>
+                  <div class="cert-grid-span-2"><label class="form-label">Lugar / región anatómica de implantación o tatuaje</label><textarea class="form-control" name="lugar_implantacion" rows="3"></textarea></div>
+                </div>
+
+                <div class="alert alert-light border mb-0">Los microchips deberán ser compatibles con normas ISO 11784 o 11785; en caso de tatuaje, debe ser claramente visible.</div>
+
+                <div class="d-flex gap-2">
+                  <button class="btn btn-primary" type="submit">Guardar certificado</button>
+                  <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-pane fade <%= activeTab === 'lectura_microchip_tatuaje' ? 'show active' : '' %>" id="pane-lectura_microchip_tatuaje" role="tabpanel" aria-labelledby="tab-lectura_microchip_tatuaje" tabindex="0">
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                  <h4 class="card-title mb-1">Certificado de lectura de microchip y/o tatuaje</h4>
+                  <p class="text-muted mb-0">Genera la declaración de lectura con el detalle de ubicación anatómica.</p>
+                </div>
+                <span class="badge text-bg-warning">Lectura</span>
+              </div>
+
+              <form action="/certificados/lectura-microchip-tatuaje" method="POST" class="d-grid gap-3 js-cert-form" data-cert-type="lectura_microchip_tatuaje">
+                <input type="hidden" name="tipo_certificado" value="lectura_microchip_tatuaje" />
+                <div>
+                  <label class="form-label">Mascota</label>
+                  <select class="form-select js-cert-mascota" name="mascota_id" required>
+                    <option value="" disabled selected>Selecciona una mascota</option>
+                    <% mascotas.forEach((mascota) => { %>
+                      <option
+                        value="<%= mascota.id %>"
+                        data-propietario="<%= mascota.cliente_nombre || '' %>"
+                        data-direccion="<%= mascota.cliente_direccion || '' %>"
+                        data-nombre="<%= mascota.nombre || '' %>"
+                        data-especie="<%= mascota.especie || '' %>"
+                        data-raza="<%= mascota.raza || '' %>"
+                        data-sexo="<%= mascota.sexo || '' %>"
+                        data-pelaje="<%= mascota.color || '' %>"
+                        data-fecha-nacimiento="<%= formatInputDate(mascota.fecha_nacimiento) %>"
+                        <%= selectedMascotaId === String(mascota.id) ? 'selected' : '' %>
+                      >
+                        <%= mascota.nombre %> · <%= mascota.cliente_nombre %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
+
+                <div class="cert-grid">
+                  <div><label class="form-label">Propietario</label><input class="form-control" type="text" name="propietario_nombre" data-field="propietario" required /></div>
+                  <div><label class="form-label">Dirección</label><input class="form-control" type="text" name="propietario_direccion" data-field="direccion" /></div>
+                  <div><label class="form-label">Tipo documento</label><input class="form-control" type="text" name="propietario_documento_tipo" /></div>
+                  <div><label class="form-label">N° documento</label><input class="form-control" type="text" name="propietario_documento_numero" /></div>
+                </div>
+
+                <div class="cert-section-title">Datos del animal</div>
+                <div class="cert-grid">
+                  <div><label class="form-label">Nombre</label><input class="form-control" type="text" name="animal_nombre" data-field="animal-nombre" required /></div>
+                  <div><label class="form-label">Especie</label><input class="form-control" type="text" name="animal_especie" data-field="animal-especie" value="Canino" required /></div>
+                  <div>
+                    <label class="form-label">Sexo</label>
+                    <select class="form-select" name="animal_sexo" data-field="animal-sexo">
+                      <option value="">Selecciona</option>
+                      <option value="Macho">Macho</option>
+                      <option value="Hembra">Hembra</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label">Condición sexual</label>
+                    <select class="form-select" name="animal_condicion_reproductiva">
+                      <option value="">Selecciona</option>
+                      <option value="Entero">Entero</option>
+                      <option value="Castrado">Castrado</option>
+                    </select>
+                  </div>
+                  <div><label class="form-label">Edad</label><input class="form-control" type="text" name="animal_edad" /></div>
+                  <div><label class="form-label">Fecha de nacimiento</label><input class="form-control" type="date" name="animal_fecha_nacimiento" data-field="animal-fecha-nacimiento" /></div>
+                  <div><label class="form-label">Peso</label><input class="form-control" type="text" name="animal_peso" /></div>
+                  <div><label class="form-label">Raza</label><input class="form-control" type="text" name="animal_raza" data-field="animal-raza" /></div>
+                  <div><label class="form-label">Pelaje</label><input class="form-control" type="text" name="animal_pelaje" data-field="animal-pelaje" /></div>
+                  <div><label class="form-label">Microchip</label><input class="form-control" type="text" name="animal_microchip" /></div>
+                </div>
+
+                <div class="cert-section-title">Declaración de lectura</div>
+                <div class="cert-grid">
+                  <div><label class="form-label">Lugar y fecha</label><input class="form-control" type="text" name="lugar_fecha" /></div>
+                  <div class="cert-grid-span-2"><label class="form-label">Detalle de lugar / región anatómica</label><textarea class="form-control" name="detalle_lectura" rows="3" placeholder="Ej. región cervical izquierda"></textarea></div>
+                </div>
+
+                <div class="d-flex gap-2">
+                  <button class="btn btn-primary" type="submit">Guardar certificado</button>
+                  <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-pane fade <%= activeTab === 'libre_miasis' ? 'show active' : '' %>" id="pane-libre_miasis" role="tabpanel" aria-labelledby="tab-libre_miasis" tabindex="0">
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                  <h4 class="card-title mb-1">Certificado de libre de miasis</h4>
+                  <p class="text-muted mb-0">Emite el certificado con la declaración sanitaria correspondiente.</p>
+                </div>
+                <span class="badge text-bg-secondary">Miasis</span>
+              </div>
+
+              <form action="/certificados/libre-miasis" method="POST" class="d-grid gap-3 js-cert-form" data-cert-type="libre_miasis">
+                <input type="hidden" name="tipo_certificado" value="libre_miasis" />
+                <div>
+                  <label class="form-label">Mascota</label>
+                  <select class="form-select js-cert-mascota" name="mascota_id" required>
+                    <option value="" disabled selected>Selecciona una mascota</option>
+                    <% mascotas.forEach((mascota) => { %>
+                      <option
+                        value="<%= mascota.id %>"
+                        data-propietario="<%= mascota.cliente_nombre || '' %>"
+                        data-direccion="<%= mascota.cliente_direccion || '' %>"
+                        data-nombre="<%= mascota.nombre || '' %>"
+                        data-especie="<%= mascota.especie || '' %>"
+                        data-raza="<%= mascota.raza || '' %>"
+                        data-sexo="<%= mascota.sexo || '' %>"
+                        data-pelaje="<%= mascota.color || '' %>"
+                        data-fecha-nacimiento="<%= formatInputDate(mascota.fecha_nacimiento) %>"
+                        <%= selectedMascotaId === String(mascota.id) ? 'selected' : '' %>
+                      >
+                        <%= mascota.nombre %> · <%= mascota.cliente_nombre %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
+
+                <div class="cert-grid">
+                  <div><label class="form-label">Propietario</label><input class="form-control" type="text" name="propietario_nombre" data-field="propietario" required /></div>
+                  <div><label class="form-label">Dirección</label><input class="form-control" type="text" name="propietario_direccion" data-field="direccion" /></div>
+                  <div><label class="form-label">Tipo documento</label><input class="form-control" type="text" name="propietario_documento_tipo" /></div>
+                  <div><label class="form-label">N° documento</label><input class="form-control" type="text" name="propietario_documento_numero" /></div>
+                </div>
+
+                <div class="cert-section-title">Datos del animal</div>
+                <div class="cert-grid">
+                  <div><label class="form-label">Nombre</label><input class="form-control" type="text" name="animal_nombre" data-field="animal-nombre" required /></div>
+                  <div><label class="form-label">Especie</label><input class="form-control" type="text" name="animal_especie" data-field="animal-especie" value="Canino" required /></div>
+                  <div>
+                    <label class="form-label">Sexo</label>
+                    <select class="form-select" name="animal_sexo" data-field="animal-sexo">
+                      <option value="">Selecciona</option>
+                      <option value="Macho">Macho</option>
+                      <option value="Hembra">Hembra</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label">Condición sexual</label>
+                    <select class="form-select" name="animal_condicion_reproductiva">
+                      <option value="">Selecciona</option>
+                      <option value="Entero">Entero</option>
+                      <option value="Castrado">Castrado</option>
+                    </select>
+                  </div>
+                  <div><label class="form-label">Edad</label><input class="form-control" type="text" name="animal_edad" /></div>
+                  <div><label class="form-label">Fecha de nacimiento</label><input class="form-control" type="date" name="animal_fecha_nacimiento" data-field="animal-fecha-nacimiento" /></div>
+                  <div><label class="form-label">Peso</label><input class="form-control" type="text" name="animal_peso" /></div>
+                  <div><label class="form-label">Raza</label><input class="form-control" type="text" name="animal_raza" data-field="animal-raza" /></div>
+                  <div><label class="form-label">Pelaje</label><input class="form-control" type="text" name="animal_pelaje" data-field="animal-pelaje" /></div>
+                  <div><label class="form-label">Microchip</label><input class="form-control" type="text" name="animal_microchip" /></div>
+                </div>
+
+                <div class="cert-section-title">Declaración</div>
+                <div class="cert-grid">
+                  <div><label class="form-label">Lugar y fecha</label><input class="form-control" type="text" name="lugar_fecha" placeholder="Ej. Resistencia, 22/03/2026" /></div>
+                </div>
+
+                <div class="alert alert-light border mb-0">La declaración del PDF indicará que el animal se encuentra libre de miasis provocada por el Gusano Barrenador o <em>Cochliomyia hominivorax</em>.</div>
+
+                <div class="d-flex gap-2">
+                  <button class="btn btn-primary" type="submit">Guardar certificado</button>
+                  <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+              <div>
+                <h4 class="card-title mb-1">Certificados emitidos</h4>
+                <p class="text-muted mb-0">Listado de certificados guardados para el tipo seleccionado.</p>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Mascota</th>
+                    <th>Propietario</th>
+                    <th>Detalle</th>
+                    <th>Fecha</th>
+                    <th class="text-end">PDF</th>
                   </tr>
-                <% }) %>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  <% const currentType = typeConfigs.find((type) => type.key === activeTab) || typeConfigs[0]; %>
+                  <% if (!currentType.records.length) { %>
+                    <tr>
+                      <td colspan="6" class="text-center text-muted py-4">Todavía no hay certificados cargados para este tipo.</td>
+                    </tr>
+                  <% } %>
+                  <% currentType.records.forEach((certificado) => { %>
+                    <tr>
+                      <td>#<%= certificado.id %></td>
+                      <td>
+                        <div class="fw-semibold"><%= certificado.animal_nombre || certificado.mascota_nombre %></div>
+                        <small class="text-muted"><%= certificado.animal_raza || '-' %></small>
+                      </td>
+                      <td><%= certificado.propietario_nombre %></td>
+                      <td><%= summaryByType(currentType.key, certificado) %></td>
+                      <td><%= dateByType(currentType.key, certificado) %></td>
+                      <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary" href="<%= pdfPathByType[currentType.key](certificado.id) %>" target="_blank" rel="noopener noreferrer">Generar PDF</a>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -233,35 +724,62 @@
 
 <script>
   (() => {
-    const mascotaSelect = document.getElementById('certificado-mascota');
-    const propietarioInput = document.getElementById('cert-propietario');
-    const direccionInput = document.getElementById('cert-direccion');
-    const animalNombreInput = document.getElementById('cert-animal-nombre');
-    const animalEspecieInput = document.getElementById('cert-animal-especie');
-    const animalSexoSelect = document.getElementById('cert-animal-sexo');
-    const animalRazaInput = document.getElementById('cert-animal-raza');
-    const animalPelajeInput = document.getElementById('cert-animal-pelaje');
-    const animalFechaNacimientoInput = document.getElementById('cert-animal-fecha-nacimiento');
+    const forms = document.querySelectorAll('.js-cert-form');
 
-    if (!mascotaSelect) return;
-
-    const syncMascotaData = () => {
-      const option = mascotaSelect.options[mascotaSelect.selectedIndex];
-      if (!option || !option.value) return;
-      propietarioInput.value = option.dataset.propietario || '';
-      direccionInput.value = option.dataset.direccion || '';
-      animalNombreInput.value = option.dataset.nombre || '';
-      animalEspecieInput.value = option.dataset.especie || 'Canino';
-      animalSexoSelect.value = option.dataset.sexo || '';
-      animalRazaInput.value = option.dataset.raza || '';
-      animalPelajeInput.value = option.dataset.pelaje || '';
-      animalFechaNacimientoInput.value = option.dataset.fechaNacimiento || '';
+    const fieldMap = {
+      propietario: 'propietario',
+      direccion: 'direccion',
+      'animal-nombre': 'nombre',
+      'animal-especie': 'especie',
+      'animal-sexo': 'sexo',
+      'animal-raza': 'raza',
+      'animal-pelaje': 'pelaje',
+      'animal-fecha-nacimiento': 'fechaNacimiento',
     };
 
-    mascotaSelect.addEventListener('change', syncMascotaData);
-    if (mascotaSelect.value) {
-      syncMascotaData();
-    }
+    const syncFormData = (form) => {
+      const mascotaSelect = form.querySelector('.js-cert-mascota');
+      if (!mascotaSelect) return;
+      const option = mascotaSelect.options[mascotaSelect.selectedIndex];
+      if (!option || !option.value) return;
+
+      Object.entries(fieldMap).forEach(([fieldName, datasetKey]) => {
+        const input = form.querySelector(`[data-field="${fieldName}"]`);
+        if (!input) return;
+        input.value = option.dataset[datasetKey] || (fieldName === 'animal-especie' ? 'Canino' : '');
+      });
+    };
+
+    forms.forEach((form) => {
+      const mascotaSelect = form.querySelector('.js-cert-mascota');
+      if (!mascotaSelect) return;
+      mascotaSelect.addEventListener('change', () => syncFormData(form));
+      if (mascotaSelect.value) {
+        syncFormData(form);
+      }
+
+      form.addEventListener('reset', () => {
+        window.requestAnimationFrame(() => {
+          if (mascotaSelect.value) {
+            syncFormData(form);
+          }
+        });
+      });
+    });
+
+    const tabButtons = document.querySelectorAll('#certificados-tab button[data-bs-toggle="pill"]');
+    tabButtons.forEach((button) => {
+      button.addEventListener('shown.bs.tab', () => {
+        const url = new URL(window.location.href);
+        const paneId = button.getAttribute('data-bs-target') || '';
+        const selectedType = paneId.replace('#pane-', '');
+        if (selectedType) {
+          if (url.searchParams.get('tipo') === selectedType) return;
+          url.searchParams.set('tipo', selectedType);
+          window.location.assign(url);
+        }
+      });
+    });
   })();
 </script>
 

@@ -264,7 +264,6 @@ const drawCertificateHeader = ({
   paragraph,
   configuracionClinica,
   titleLines,
-  showGuideText = true,
   brandingBox = { x: 34, y: 33, width: 210, height: 26 },
 }) => {
   const { clinicName, membrete } = getCertificateBranding(configuracionClinica);
@@ -291,20 +290,7 @@ const drawCertificateHeader = ({
     lineHeight: 9,
   });
 
-  if (showGuideText) {
-    text(
-      297.5,
-      85,
-      'Aclaración: Modelos de certificados orientativos sugeridos. En caso de utilizar modelos propios, estos',
-      { size: 7, align: 'center' }
-    );
-    text(297.5, 94, 'deberán contener los datos mínimos que figuran en los modelos.', {
-      size: 7,
-      align: 'center',
-    });
-  }
-
-  let currentY = showGuideText ? 122 : 110;
+  let currentY = 110;
   titleLines.forEach((title) => {
     text(297.5, currentY, title, { font: 'F2', size: 11, align: 'center' });
     currentY += 14;
@@ -420,7 +406,6 @@ const generateLeishmaniasisCertificatePdf = ({ certificado, configuracionClinica
       'CERTIFICADO PARA PRUEBA DETECCIÓN DE LA RESPUESTA',
       'INMUNITARIA NEGATIVA A LEISHMANIASIS',
     ],
-    showGuideText: true,
     brandingBox: { x: 34, y: 28, width: 235, height: 50 },
   });
   drawCertificateOwnerAnimalSection({

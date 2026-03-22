@@ -38,8 +38,234 @@ const SEXOS_MASCOTA = new Set(['Macho', 'Hembra']);
 const TAMANIOS_MASCOTA = new Set(['Grande', 'Mediano', 'Pequeño']);
 const HISTORIA_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'historia-clinica');
 const CONFIG_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'configuracion');
+const CERTIFICADO_LEISHMANIASIS_RESULTADO = 'NEGATIVO';
 
 const getFieldValue = (field) => (Array.isArray(field) ? field[0] : field);
+
+const normalizeText = (value) => (value || '').toString().trim();
+
+const formatShortDate = (value = '') => {
+  if (!value) return '';
+  const normalized = value.toString().split('T')[0];
+  const [year, month, day] = normalized.split('-');
+  if (year && month && day) {
+    return `${day}/${month}/${year}`;
+  }
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString('es-AR');
+  }
+  return value;
+};
+
+const escapePdfText = (value = '') =>
+  value
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+
+const buildSimplePdf = ({ width = 595.28, height = 841.89, content = '' }) => {
+  const objects = [];
+  const addObject = (body) => {
+    objects.push(body);
+    return objects.length;
+  };
+
+  const contentBuffer = Buffer.from(content, 'latin1');
+  const catalogId = addObject('<< /Type /Catalog /Pages 2 0 R >>');
+  const pagesId = addObject('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  const pageId = addObject(
+    `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`
+  );
+  const fontRegularId = addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  const fontBoldId = addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  const contentId = addObject(`<< /Length ${contentBuffer.length} >>\nstream\n${content}\nendstream`);
+
+  const ordered = [catalogId, pagesId, pageId, fontRegularId, fontBoldId, contentId];
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+
+  ordered.forEach((objectId) => {
+    offsets[objectId] = Buffer.byteLength(pdf, 'latin1');
+    pdf += `${objectId} 0 obj\n${objects[objectId - 1]}\nendobj\n`;
+  });
+
+  const xrefOffset = Buffer.byteLength(pdf, 'latin1');
+  pdf += `xref\n0 ${objects.length + 1}\n`;
+  pdf += '0000000000 65535 f \n';
+  for (let index = 1; index <= objects.length; index += 1) {
+    pdf += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return Buffer.from(pdf, 'latin1');
+};
+
+const generateLeishmaniasisCertificatePdf = ({
+  certificado,
+  configuracionClinica,
+}) => {
+  const pageWidth = 595.28;
+  const pageHeight = 841.89;
+  const cmds = [];
+  const toPdfY = (topY) => pageHeight - topY;
+  const text = (x, topY, value, options = {}) => {
+    const { font = 'F1', size = 10, align = 'left' } = options;
+    const rawText = escapePdfText(value || '');
+    if (!rawText) {
+      return;
+    }
+    const estimatedWidth = rawText.length * size * 0.45;
+    const adjustedX =
+      align === 'center' ? x - estimatedWidth / 2 : align === 'right' ? x - estimatedWidth : x;
+    cmds.push(`BT /${font} ${size} Tf 1 0 0 1 ${adjustedX.toFixed(2)} ${toPdfY(topY).toFixed(2)} Tm (${rawText}) Tj ET`);
+  };
+  const line = (x1, topY1, x2, topY2, width = 1) => {
+    cmds.push(`${width} w ${x1.toFixed(2)} ${toPdfY(topY1).toFixed(2)} m ${x2.toFixed(2)} ${toPdfY(topY2).toFixed(2)} l S`);
+  };
+  const rect = (x, topY, w, h, width = 1) => {
+    cmds.push(`${width} w ${x.toFixed(2)} ${toPdfY(topY + h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`);
+  };
+
+  const clinicName =
+    normalizeText(configuracionClinica?.veterinaria_nombre) || 'Clínica Veterinaria';
+  const medicaNombre = normalizeText(configuracionClinica?.medica_nombre);
+  const medicaMatricula = normalizeText(configuracionClinica?.medica_matricula);
+  const sexo = normalizeText(certificado.animal_sexo) || 'Macho';
+  const sexoOpuesto = sexo === 'Macho' ? 'Hembra' : 'Macho';
+  const condicion =
+    normalizeText(certificado.animal_condicion_reproductiva) || 'Entero';
+  const condicionOpuesta = condicion === 'Entero' ? 'Castrado' : 'Entero';
+  const membrete = medicaNombre
+    ? `${medicaNombre}${medicaMatricula ? ` · Matrícula ${medicaMatricula}` : ''}`
+    : 'Membrete del profesional actuante y/o clínica veterinaria';
+
+  rect(20, 18, 555, 805, 1);
+  rect(34, 33, 210, 26, 0.8);
+  text(42, 50, clinicName, { size: 8 });
+  text(42, 60, membrete, { size: 8 });
+  text(
+    297.5,
+    85,
+    'Aclaración: Modelos de certificados orientativos sugeridos. En caso de utilizar modelos propios, estos',
+    { size: 7, align: 'center' }
+  );
+  text(297.5, 94, 'deberán contener los datos mínimos que figuran en los modelos.', {
+    size: 7,
+    align: 'center',
+  });
+  text(
+    297.5,
+    122,
+    'CERTIFICADO PARA PRUEBA DE DETECCIÓN DE LA RESPUESTA',
+    { font: 'F2', size: 11, align: 'center' }
+  );
+  text(297.5, 136, 'INMUNITARIA NEGATIVA A LEISHMANIASIS', {
+    font: 'F2',
+    size: 11,
+    align: 'center',
+  });
+  line(100, 141, 495, 141, 1);
+
+  text(55, 176, `Nombre y Apellido del propietario: ${certificado.propietario_nombre || ''}`, { size: 9 });
+  line(245, 179, 540, 179, 0.7);
+  text(
+    55,
+    196,
+    `Tipo y N° de Documento de Identidad o Pasaporte: ${[
+      certificado.propietario_documento_tipo,
+      certificado.propietario_documento_numero,
+    ]
+      .filter(Boolean)
+      .join(' ')}`,
+    { size: 9 }
+  );
+  line(290, 199, 540, 199, 0.7);
+  text(55, 216, `Dirección: ${certificado.propietario_direccion || ''}`, { size: 9 });
+  line(100, 219, 540, 219, 0.7);
+
+  text(55, 250, 'Datos del animal:', { font: 'F2', size: 10 });
+  text(55, 272, `Nombre: ${certificado.animal_nombre || ''}`, { size: 9 });
+  line(95, 275, 540, 275, 0.7);
+
+  text(84, 297, (certificado.animal_especie || 'CANINO').toUpperCase(), {
+    size: 9,
+  });
+  text(265, 297, `${sexo.toUpperCase()} / ${sexoOpuesto.toUpperCase()}`, {
+    size: 9,
+  });
+  text(
+    420,
+    297,
+    `${condicion.toUpperCase()} / ${condicionOpuesta.toUpperCase()}`,
+    { size: 9 }
+  );
+  text(355, 313, '(Tachar lo que no corresponda)', { size: 7, align: 'center' });
+
+  text(
+    55,
+    340,
+    `Edad (Años y meses): ${certificado.animal_edad || ''}    Fecha de nacimiento: ${formatShortDate(
+      certificado.animal_fecha_nacimiento
+    ) || '....../....../..........'}`,
+    { size: 9 }
+  );
+  line(162, 343, 335, 343, 0.7);
+  line(445, 343, 540, 343, 0.7);
+  text(55, 360, `Peso: ${certificado.animal_peso || ''}`, { size: 9 });
+  line(85, 363, 205, 363, 0.7);
+  text(55, 380, `Raza: ${certificado.animal_raza || ''}    Pelaje: ${certificado.animal_pelaje || ''}`, { size: 9 });
+  line(84, 383, 292, 383, 0.7);
+  line(338, 383, 540, 383, 0.7);
+  text(55, 400, `N° de Microchip (si corresponde): ${certificado.animal_microchip || ''}`, { size: 9 });
+  line(200, 403, 540, 403, 0.7);
+
+  text(55, 435, 'DATOS DE LA MUESTRA', { font: 'F2', size: 10 });
+  text(
+    55,
+    463,
+    `Fecha de toma de muestra: ${formatShortDate(certificado.fecha_toma_muestra) || '....../....../..........'}`,
+    { size: 9 }
+  );
+  line(165, 466, 310, 466, 0.7);
+  text(55, 485, `Método diagnóstico empleado: ${certificado.metodo_diagnostico || ''}`, { size: 9 });
+  line(182, 488, 540, 488, 0.7);
+  text(55, 505, `Laboratorio diagnóstico: ${certificado.laboratorio_diagnostico || ''}`, { size: 9 });
+  line(150, 508, 540, 508, 0.7);
+
+  text(55, 545, 'RESULTADO', { font: 'F2', size: 10 });
+  text(
+    55,
+    575,
+    `Fecha de Resultado: ${formatShortDate(certificado.fecha_resultado) || '....../....../..........'}`,
+    { size: 9 }
+  );
+  line(146, 578, 260, 578, 0.7);
+  rect(50, 592, 490, 28, 0.8);
+  text(
+    55,
+    605,
+    'Por medio de la presente se certifica que el análisis de Leishmaniasis arrojó resultado',
+    { font: 'F2', size: 8 }
+  );
+  text(55, 615, (certificado.resultado || CERTIFICADO_LEISHMANIASIS_RESULTADO).toUpperCase(), {
+    font: 'F2',
+    size: 10,
+  });
+
+  text(55, 648, `${certificado.lugar_fecha || 'LUGAR Y FECHA'} `, { size: 9 });
+  line(126, 651, 250, 651, 0.7);
+  text(400, 705, 'Firma y Sello del Profesional Actuante', { size: 9, align: 'center' });
+  line(340, 692, 520, 692, 0.7);
+
+  line(34, 795, 555, 795, 0.8);
+  text(40, 807, 'Versión 29.11.2021 – www.senasa.gob.ar', { size: 7 });
+
+  return buildSimplePdf({
+    width: pageWidth,
+    height: pageHeight,
+    content: cmds.join('\n'),
+  });
+};
 
 const ensureConfiguracionClinicaTable = async () => {
   await pool.query(
@@ -58,6 +284,38 @@ const ensureConfiguracionClinicaTable = async () => {
      SELECT 1
      FROM DUAL
      WHERE NOT EXISTS (SELECT 1 FROM configuracion_clinica WHERE id = 1)`
+  );
+};
+
+const ensureCertificadosLeishmaniasisTable = async () => {
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS certificados_leishmaniasis (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      mascota_id INT NOT NULL,
+      propietario_nombre VARCHAR(255) NOT NULL,
+      propietario_documento_tipo VARCHAR(80) NULL,
+      propietario_documento_numero VARCHAR(80) NULL,
+      propietario_direccion VARCHAR(255) NULL,
+      animal_nombre VARCHAR(120) NOT NULL,
+      animal_especie VARCHAR(80) NOT NULL DEFAULT 'Canino',
+      animal_sexo VARCHAR(20) NULL,
+      animal_condicion_reproductiva VARCHAR(20) NULL,
+      animal_edad VARCHAR(80) NULL,
+      animal_fecha_nacimiento DATE NULL,
+      animal_peso VARCHAR(40) NULL,
+      animal_raza VARCHAR(120) NULL,
+      animal_pelaje VARCHAR(120) NULL,
+      animal_microchip VARCHAR(120) NULL,
+      fecha_toma_muestra DATE NULL,
+      metodo_diagnostico VARCHAR(255) NULL,
+      laboratorio_diagnostico VARCHAR(255) NULL,
+      fecha_resultado DATE NULL,
+      resultado VARCHAR(80) NOT NULL DEFAULT 'NEGATIVO',
+      lugar_fecha VARCHAR(255) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_certificados_leishmaniasis_mascota_id (mascota_id)
+    )`
   );
 };
 
@@ -807,6 +1065,168 @@ app.get(
   })
 );
 
+app.get(
+  '/certificados',
+  asyncHandler(async (req, res) => {
+    const selectedMascotaId = req.query.mascota_id ? String(req.query.mascota_id) : '';
+    const [mascotas] = await pool.query(
+      `SELECT mascotas.id,
+              mascotas.nombre,
+              mascotas.especie,
+              mascotas.raza,
+              mascotas.sexo,
+              mascotas.color,
+              mascotas.fecha_nacimiento,
+              clientes.nombre AS cliente_nombre,
+              clientes.direccion AS cliente_direccion
+       FROM mascotas
+       JOIN clientes ON clientes.id = mascotas.cliente_id
+       ORDER BY mascotas.nombre`
+    );
+
+    let certificadosQuery =
+      `SELECT certificados_leishmaniasis.*,
+              mascotas.nombre AS mascota_nombre,
+              clientes.nombre AS cliente_nombre
+       FROM certificados_leishmaniasis
+       JOIN mascotas ON mascotas.id = certificados_leishmaniasis.mascota_id
+       JOIN clientes ON clientes.id = mascotas.cliente_id`;
+    const certificadoParams = [];
+    if (selectedMascotaId) {
+      certificadosQuery += ' WHERE certificados_leishmaniasis.mascota_id = ?';
+      certificadoParams.push(selectedMascotaId);
+    }
+    certificadosQuery += ' ORDER BY certificados_leishmaniasis.created_at DESC, certificados_leishmaniasis.id DESC';
+    const [certificados] = await pool.query(certificadosQuery, certificadoParams);
+
+    res.render('certificados', {
+      mascotas,
+      certificados,
+      selectedMascotaId,
+      certificadoResultadoDefault: CERTIFICADO_LEISHMANIASIS_RESULTADO,
+    });
+  })
+);
+
+app.post(
+  '/certificados/leishmaniasis',
+  asyncHandler(async (req, res) => {
+    const {
+      mascota_id,
+      propietario_nombre,
+      propietario_documento_tipo,
+      propietario_documento_numero,
+      propietario_direccion,
+      animal_nombre,
+      animal_especie,
+      animal_sexo,
+      animal_condicion_reproductiva,
+      animal_edad,
+      animal_fecha_nacimiento,
+      animal_peso,
+      animal_raza,
+      animal_pelaje,
+      animal_microchip,
+      fecha_toma_muestra,
+      metodo_diagnostico,
+      laboratorio_diagnostico,
+      fecha_resultado,
+      resultado,
+      lugar_fecha,
+    } = req.body;
+
+    await pool.query(
+      `INSERT INTO certificados_leishmaniasis (
+        mascota_id,
+        propietario_nombre,
+        propietario_documento_tipo,
+        propietario_documento_numero,
+        propietario_direccion,
+        animal_nombre,
+        animal_especie,
+        animal_sexo,
+        animal_condicion_reproductiva,
+        animal_edad,
+        animal_fecha_nacimiento,
+        animal_peso,
+        animal_raza,
+        animal_pelaje,
+        animal_microchip,
+        fecha_toma_muestra,
+        metodo_diagnostico,
+        laboratorio_diagnostico,
+        fecha_resultado,
+        resultado,
+        lugar_fecha
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        mascota_id,
+        normalizeText(propietario_nombre),
+        normalizeText(propietario_documento_tipo) || null,
+        normalizeText(propietario_documento_numero) || null,
+        normalizeText(propietario_direccion) || null,
+        normalizeText(animal_nombre),
+        normalizeText(animal_especie) || 'Canino',
+        normalizeText(animal_sexo) || null,
+        normalizeText(animal_condicion_reproductiva) || null,
+        normalizeText(animal_edad) || null,
+        animal_fecha_nacimiento || null,
+        normalizeText(animal_peso) || null,
+        normalizeText(animal_raza) || null,
+        normalizeText(animal_pelaje) || null,
+        normalizeText(animal_microchip) || null,
+        fecha_toma_muestra || null,
+        normalizeText(metodo_diagnostico) || null,
+        normalizeText(laboratorio_diagnostico) || null,
+        fecha_resultado || null,
+        normalizeText(resultado) || CERTIFICADO_LEISHMANIASIS_RESULTADO,
+        normalizeText(lugar_fecha) || null,
+      ]
+    );
+
+    res.redirect('/certificados');
+  })
+);
+
+app.get(
+  '/certificados/leishmaniasis/:id/pdf',
+  asyncHandler(async (req, res) => {
+    const [rows] = await pool.query(
+      `SELECT certificados_leishmaniasis.*,
+              mascotas.nombre AS mascota_nombre,
+              mascotas.especie AS mascota_especie,
+              mascotas.raza AS mascota_raza,
+              mascotas.sexo AS mascota_sexo,
+              clientes.nombre AS cliente_nombre
+       FROM certificados_leishmaniasis
+       JOIN mascotas ON mascotas.id = certificados_leishmaniasis.mascota_id
+       JOIN clientes ON clientes.id = mascotas.cliente_id
+       WHERE certificados_leishmaniasis.id = ?`,
+      [req.params.id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).render('error', {
+        message: 'El certificado solicitado no existe.',
+      });
+    }
+
+    const certificado = rows[0];
+    const configuracionClinica = await getConfiguracionClinica();
+    const pdfBuffer = generateLeishmaniasisCertificatePdf({
+      certificado,
+      configuracionClinica,
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="certificado-leishmaniasis-${certificado.id}.pdf"`
+    );
+    res.send(pdfBuffer);
+  })
+);
+
 app.post(
   '/historia-clinica',
   asyncHandler(async (req, res) => {
@@ -1460,6 +1880,7 @@ const startServer = async () => {
   await ensureHistoriaClinicaHasDocumentoAdjunto();
   await ensureHistoriaClinicaDocumentosTable();
   await ensureConfiguracionClinicaTable();
+  await ensureCertificadosLeishmaniasisTable();
   await ensureVacunasHasWhatsappReminderFlag();
   app.listen(PORT, () => {
     console.log(`Servidor iniciado en http://localhost:${PORT}`);

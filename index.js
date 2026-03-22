@@ -186,25 +186,54 @@ const getCertificateBranding = (configuracionClinica) => {
   return { clinicName, membrete };
 };
 
-const drawCertificateHeader = ({ text, line, rect, configuracionClinica, titleLines }) => {
+const drawCertificateHeader = ({
+  text,
+  line,
+  rect,
+  paragraph,
+  configuracionClinica,
+  titleLines,
+  showGuideText = true,
+  brandingBox = { x: 34, y: 33, width: 210, height: 26 },
+}) => {
   const { clinicName, membrete } = getCertificateBranding(configuracionClinica);
+  const writeBrandingParagraph =
+    paragraph ||
+    ((x, topY, value, options = {}) => {
+      const { lineHeight = 9, ...textOptions } = options;
+      const lines = (value || '').split(/\n+/).filter(Boolean);
+      lines.forEach((entry, index) => {
+        text(x, topY + index * lineHeight, entry, textOptions);
+      });
+    });
 
   rect(20, 18, 555, 805, 1);
-  rect(34, 33, 210, 26, 0.8);
-  text(42, 50, clinicName, { size: 8 });
-  text(42, 60, membrete, { size: 8 });
-  text(
-    297.5,
-    85,
-    'Aclaración: Modelos de certificados orientativos sugeridos. En caso de utilizar modelos propios, estos',
-    { size: 7, align: 'center' }
-  );
-  text(297.5, 94, 'deberán contener los datos mínimos que figuran en los modelos.', {
-    size: 7,
-    align: 'center',
+  rect(brandingBox.x, brandingBox.y, brandingBox.width, brandingBox.height, 0.8);
+  writeBrandingParagraph(brandingBox.x + 8, brandingBox.y + 12, clinicName, {
+    size: 8,
+    maxChars: 40,
+    lineHeight: 9,
+  });
+  writeBrandingParagraph(brandingBox.x + 8, brandingBox.y + 22, membrete, {
+    size: 8,
+    maxChars: 40,
+    lineHeight: 9,
   });
 
-  let currentY = 122;
+  if (showGuideText) {
+    text(
+      297.5,
+      85,
+      'Aclaración: Modelos de certificados orientativos sugeridos. En caso de utilizar modelos propios, estos',
+      { size: 7, align: 'center' }
+    );
+    text(297.5, 94, 'deberán contener los datos mínimos que figuran en los modelos.', {
+      size: 7,
+      align: 'center',
+    });
+  }
+
+  let currentY = showGuideText ? 122 : 110;
   titleLines.forEach((title) => {
     text(297.5, currentY, title, { font: 'F2', size: 11, align: 'center' });
     currentY += 14;
@@ -212,16 +241,25 @@ const drawCertificateHeader = ({ text, line, rect, configuracionClinica, titleLi
   line(100, currentY - 5, 495, currentY - 5, 1);
 };
 
-const drawCertificateOwnerAnimalSection = ({ text, line, certificado }) => {
-  const sexo = normalizeText(certificado.animal_sexo) || 'Macho';
-  const sexoOpuesto = sexo === 'Macho' ? 'Hembra' : 'Macho';
-  const condicion = normalizeText(certificado.animal_condicion_reproductiva) || 'Entero';
-  const condicionOpuesta = condicion === 'Entero' ? 'Castrado' : 'Entero';
+const drawCertificateOwnerAnimalSection = ({
+  text,
+  line,
+  certificado,
+  showFieldLines = true,
+  databaseOnly = false,
+}) => {
+  const sexo = normalizeText(certificado.animal_sexo);
+  const condicion = normalizeText(certificado.animal_condicion_reproductiva);
+  const safeLine = (...args) => {
+    if (showFieldLines) {
+      line(...args);
+    }
+  };
 
   text(55, 176, `Nombre y Apellido del propietario: ${certificado.propietario_nombre || ''}`, {
     size: 9,
   });
-  line(245, 179, 540, 179, 0.7);
+  safeLine(245, 179, 540, 179, 0.7);
   text(
     55,
     196,
@@ -233,38 +271,47 @@ const drawCertificateOwnerAnimalSection = ({ text, line, certificado }) => {
       .join(' ')}`,
     { size: 9 }
   );
-  line(290, 199, 540, 199, 0.7);
+  safeLine(290, 199, 540, 199, 0.7);
   text(55, 216, `Dirección: ${certificado.propietario_direccion || ''}`, { size: 9 });
-  line(100, 219, 540, 219, 0.7);
+  safeLine(100, 219, 540, 219, 0.7);
 
   text(55, 250, 'Datos del animal:', { font: 'F2', size: 10 });
   text(55, 272, `Nombre: ${certificado.animal_nombre || ''}`, { size: 9 });
-  line(95, 275, 540, 275, 0.7);
-  text(84, 297, (certificado.animal_especie || 'CANINO').toUpperCase(), { size: 9 });
-  text(265, 297, `${sexo.toUpperCase()} / ${sexoOpuesto.toUpperCase()}`, { size: 9 });
-  text(420, 297, `${condicion.toUpperCase()} / ${condicionOpuesta.toUpperCase()}`, { size: 9 });
-  text(355, 313, '(Tachar lo que no corresponda)', { size: 7, align: 'center' });
+  safeLine(95, 275, 540, 275, 0.7);
+  text(84, 297, normalizeText(certificado.animal_especie).toUpperCase(), { size: 9 });
+  if (databaseOnly) {
+    text(265, 297, sexo.toUpperCase(), { size: 9 });
+    text(420, 297, condicion.toUpperCase(), { size: 9 });
+  } else {
+    const sexoOpuesto = sexo === 'Macho' ? 'Hembra' : 'Macho';
+    const condicionOpuesta = condicion === 'Entero' ? 'Castrado' : 'Entero';
+    text(265, 297, `${sexo.toUpperCase()} / ${sexoOpuesto.toUpperCase()}`, { size: 9 });
+    text(420, 297, `${condicion.toUpperCase()} / ${condicionOpuesta.toUpperCase()}`, { size: 9 });
+  }
+  if (!databaseOnly) {
+    text(355, 313, '(Tachar lo que no corresponda)', { size: 7, align: 'center' });
+  }
   text(
     55,
     340,
     `Edad (Años y meses): ${certificado.animal_edad || ''}    Fecha de nacimiento: ${
-      formatShortDate(certificado.animal_fecha_nacimiento) || '....../....../..........'
+      formatShortDate(certificado.animal_fecha_nacimiento)
     }`,
     { size: 9 }
   );
-  line(162, 343, 335, 343, 0.7);
-  line(445, 343, 540, 343, 0.7);
+  safeLine(162, 343, 335, 343, 0.7);
+  safeLine(445, 343, 540, 343, 0.7);
   text(55, 360, `Peso: ${certificado.animal_peso || ''}`, { size: 9 });
-  line(85, 363, 205, 363, 0.7);
+  safeLine(85, 363, 205, 363, 0.7);
   text(55, 380, `Raza: ${certificado.animal_raza || ''}    Pelaje: ${certificado.animal_pelaje || ''}`, {
     size: 9,
   });
-  line(84, 383, 292, 383, 0.7);
-  line(338, 383, 540, 383, 0.7);
+  safeLine(84, 383, 292, 383, 0.7);
+  safeLine(338, 383, 540, 383, 0.7);
   text(55, 400, `N° de Microchip (si corresponde): ${certificado.animal_microchip || ''}`, {
     size: 9,
   });
-  line(200, 403, 540, 403, 0.7);
+  safeLine(200, 403, 540, 403, 0.7);
 };
 
 const drawCertificateFooter = ({ text, line, footerText = CERTIFICADO_FOOTER }) => {
@@ -280,55 +327,53 @@ const finalizeCertificatePdf = ({ pageWidth, pageHeight, cmds }) =>
   });
 
 const generateLeishmaniasisCertificatePdf = ({ certificado, configuracionClinica }) => {
-  const { pageWidth, pageHeight, cmds, text, line, rect } = createPdfCanvas();
+  const { pageWidth, pageHeight, cmds, text, line, rect, paragraph } = createPdfCanvas();
 
   drawCertificateHeader({
     text,
     line,
     rect,
+    paragraph,
     configuracionClinica,
     titleLines: [
       'CERTIFICADO PARA PRUEBA DE DETECCIÓN DE LA RESPUESTA',
       'INMUNITARIA NEGATIVA A LEISHMANIASIS',
     ],
+    showGuideText: false,
+    brandingBox: { x: 34, y: 28, width: 235, height: 42 },
   });
-  drawCertificateOwnerAnimalSection({ text, line, certificado });
+  drawCertificateOwnerAnimalSection({
+    text,
+    line,
+    certificado,
+    showFieldLines: false,
+    databaseOnly: true,
+  });
 
   text(55, 435, 'DATOS DE LA MUESTRA', { font: 'F2', size: 10 });
   text(
     55,
     463,
-    `Fecha de toma de muestra: ${formatShortDate(certificado.fecha_toma_muestra) || '....../....../..........'}`,
+    `Fecha de toma de muestra: ${formatShortDate(certificado.fecha_toma_muestra)}`,
     { size: 9 }
   );
-  line(165, 466, 310, 466, 0.7);
   text(55, 485, `Método diagnóstico empleado: ${certificado.metodo_diagnostico || ''}`, { size: 9 });
-  line(182, 488, 540, 488, 0.7);
   text(55, 505, `Laboratorio diagnóstico: ${certificado.laboratorio_diagnostico || ''}`, { size: 9 });
-  line(150, 508, 540, 508, 0.7);
 
   text(55, 545, 'RESULTADO', { font: 'F2', size: 10 });
   text(
     55,
     575,
-    `Fecha de Resultado: ${formatShortDate(certificado.fecha_resultado) || '....../....../..........'}`,
+    `Fecha de Resultado: ${formatShortDate(certificado.fecha_resultado)}`,
     { size: 9 }
   );
-  line(146, 578, 260, 578, 0.7);
-  rect(50, 592, 490, 28, 0.8);
-  text(
-    55,
-    605,
-    'Por medio de la presente se certifica que el análisis de Leishmaniasis arrojó resultado',
-    { font: 'F2', size: 8 }
-  );
-  text(55, 615, (certificado.resultado || CERTIFICADO_LEISHMANIASIS_RESULTADO).toUpperCase(), {
+  rect(50, 592, 490, 38, 0.8);
+  text(55, 613, (certificado.resultado || CERTIFICADO_LEISHMANIASIS_RESULTADO).toUpperCase(), {
     font: 'F2',
-    size: 10,
+    size: 11,
   });
 
-  text(55, 648, `${certificado.lugar_fecha || 'LUGAR Y FECHA'} `, { size: 9 });
-  line(126, 651, 250, 651, 0.7);
+  text(55, 648, `${certificado.lugar_fecha || ''}`, { size: 9 });
   text(400, 705, 'Firma y Sello del Profesional Actuante', { size: 9, align: 'center' });
   line(340, 692, 520, 692, 0.7);
   drawCertificateFooter({ text, line });

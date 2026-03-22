@@ -419,9 +419,16 @@ CREATE TABLE IF NOT EXISTS mascotas_razas (
 );
 
 INSERT INTO clientes (nombre, telefono, email, direccion)
-VALUES
-  ('Carolina López', '555-1234', 'carolina@example.com', 'Av. Siempre Viva 123'),
-  ('Miguel Rojas', '555-9876', 'miguel@example.com', 'Calle 45 #10-20');
+SELECT 'Carolina López', '555-1234', 'carolina@example.com', 'Av. Siempre Viva 123'
+WHERE NOT EXISTS (
+  SELECT 1 FROM clientes WHERE email = 'carolina@example.com'
+);
+
+INSERT INTO clientes (nombre, telefono, email, direccion)
+SELECT 'Miguel Rojas', '555-9876', 'miguel@example.com', 'Calle 45 #10-20'
+WHERE NOT EXISTS (
+  SELECT 1 FROM clientes WHERE email = 'miguel@example.com'
+);
 
 INSERT INTO mascotas (
   nombre,
@@ -434,14 +441,62 @@ INSERT INTO mascotas (
   fecha_nacimiento,
   cliente_id
 )
-VALUES
-  ('Nala', 'Perro', 'Golden Retriever', 'Hembra', 'Grande', 'Dorado', 'Mancha blanca en el pecho', '2021-04-12', 1),
-  ('Milo', 'Gato', 'Siamés', 'Macho', 'Pequeño', 'Crema', 'Ojos azules y cola oscura', '2020-09-05', 2);
+SELECT
+  'Nala',
+  'Perro',
+  'Golden Retriever',
+  'Hembra',
+  'Grande',
+  'Dorado',
+  'Mancha blanca en el pecho',
+  '2021-04-12',
+  (SELECT id FROM clientes WHERE email = 'carolina@example.com' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM mascotas
+  WHERE nombre = 'Nala'
+    AND cliente_id = (SELECT id FROM clientes WHERE email = 'carolina@example.com' LIMIT 1)
+);
+
+INSERT INTO mascotas (
+  nombre,
+  especie,
+  raza,
+  sexo,
+  tamanio,
+  color,
+  senias_particulares,
+  fecha_nacimiento,
+  cliente_id
+)
+SELECT
+  'Milo',
+  'Gato',
+  'Siamés',
+  'Macho',
+  'Pequeño',
+  'Crema',
+  'Ojos azules y cola oscura',
+  '2020-09-05',
+  (SELECT id FROM clientes WHERE email = 'miguel@example.com' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM mascotas
+  WHERE nombre = 'Milo'
+    AND cliente_id = (SELECT id FROM clientes WHERE email = 'miguel@example.com' LIMIT 1)
+);
 
 INSERT INTO usuarios (nombre, rol, email)
-VALUES
-  ('Dra. Isabel Torres', 'Veterinario', 'isabel@example.com'),
-  ('Juan Pérez', 'Asistente', 'juan@example.com');
+SELECT 'Dra. Isabel Torres', 'Veterinario', 'isabel@example.com'
+WHERE NOT EXISTS (
+  SELECT 1 FROM usuarios WHERE email = 'isabel@example.com'
+);
+
+INSERT INTO usuarios (nombre, rol, email)
+SELECT 'Juan Pérez', 'Asistente', 'juan@example.com'
+WHERE NOT EXISTS (
+  SELECT 1 FROM usuarios WHERE email = 'juan@example.com'
+);
 
 INSERT INTO historia_clinica (
   mascota_id,
@@ -465,61 +520,109 @@ INSERT INTO historia_clinica (
   tratamiento,
   otros_datos
 )
-VALUES
-  (
-    1,
-    '2024-09-15',
-    'Vacunación anual',
-    'Activo y alerta',
-    'Normal',
-    '2024-08-01',
-    '90 lpm',
-    '24 rpm',
-    'Adecuada',
-    '38.4°C',
-    'Bien',
-    'Bien',
-    'Bien',
-    'Bien',
-    'Plan sanitario anual',
-    'Control parasitario pendiente',
-    'Paciente estable',
-    'No requiere',
-    'Reposo 24 horas',
-    'Sin antecedentes relevantes'
-  ),
-  (
-    2,
-    '2024-09-18',
-    'Control general',
-    'Tranquilo y reactivo',
-    'Delgado',
-    '2024-07-20',
-    '110 lpm',
-    '28 rpm',
-    'Leve deshidratación',
-    '38.9°C',
-    'Bien',
-    'Mal',
-    'Bien',
-    'Bien',
-    'Gastritis',
-    'Intolerancia alimentaria',
-    'Gastritis leve',
-    'Hemograma',
-    'Continuar dieta balanceada',
-    'Control en 7 días'
-  );
+SELECT
+  (SELECT id FROM mascotas WHERE nombre = 'Nala' LIMIT 1),
+  '2024-09-15',
+  'Vacunación anual',
+  'Activo y alerta',
+  'Normal',
+  '2024-08-01',
+  '90 lpm',
+  '24 rpm',
+  'Adecuada',
+  '38.4°C',
+  'Bien',
+  'Bien',
+  'Bien',
+  'Bien',
+  'Plan sanitario anual',
+  'Control parasitario pendiente',
+  'Paciente estable',
+  'No requiere',
+  'Reposo 24 horas',
+  'Sin antecedentes relevantes'
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM historia_clinica
+  WHERE mascota_id = (SELECT id FROM mascotas WHERE nombre = 'Nala' LIMIT 1)
+    AND fecha = '2024-09-15'
+    AND motivo = 'Vacunación anual'
+);
+
+INSERT INTO historia_clinica (
+  mascota_id,
+  fecha,
+  motivo,
+  aspecto_general,
+  estado_nutricion,
+  ultima_desparacitacion,
+  frecuencia_cardiaca,
+  frecuencia_respiratoria,
+  hidratacion,
+  temperatura,
+  mucosa_palpebral,
+  mucosa_escleral,
+  mucosa_bucal,
+  mucosa_vulpen,
+  diagnostico_presuntivo,
+  diagnostico_diferencial,
+  diagnostico_definitivo,
+  analisis_solicitados,
+  tratamiento,
+  otros_datos
+)
+SELECT
+  (SELECT id FROM mascotas WHERE nombre = 'Milo' LIMIT 1),
+  '2024-09-18',
+  'Control general',
+  'Tranquilo y reactivo',
+  'Delgado',
+  '2024-07-20',
+  '110 lpm',
+  '28 rpm',
+  'Leve deshidratación',
+  '38.9°C',
+  'Bien',
+  'Mal',
+  'Bien',
+  'Bien',
+  'Gastritis',
+  'Intolerancia alimentaria',
+  'Gastritis leve',
+  'Hemograma',
+  'Continuar dieta balanceada',
+  'Control en 7 días'
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM historia_clinica
+  WHERE mascota_id = (SELECT id FROM mascotas WHERE nombre = 'Milo' LIMIT 1)
+    AND fecha = '2024-09-18'
+    AND motivo = 'Control general'
+);
 
 INSERT INTO vacunas_tipos (nombre)
-VALUES
-  ('Antirrábica'),
-  ('Quíntuple');
+SELECT 'Antirrábica'
+WHERE NOT EXISTS (
+  SELECT 1 FROM vacunas_tipos WHERE nombre = 'Antirrábica'
+);
+
+INSERT INTO vacunas_tipos (nombre)
+SELECT 'Quíntuple'
+WHERE NOT EXISTS (
+  SELECT 1 FROM vacunas_tipos WHERE nombre = 'Quíntuple'
+);
 
 INSERT INTO vacunas_nombres_comerciales (nombre, tipo_id)
-VALUES
-  ('Rabivac', 1),
-  ('Quintuple Vet', 2);
+SELECT 'Rabivac', (SELECT id FROM vacunas_tipos WHERE nombre = 'Antirrábica' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM vacunas_nombres_comerciales WHERE nombre = 'Rabivac'
+);
+
+INSERT INTO vacunas_nombres_comerciales (nombre, tipo_id)
+SELECT 'Quintuple Vet', (SELECT id FROM vacunas_tipos WHERE nombre = 'Quíntuple' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1 FROM vacunas_nombres_comerciales WHERE nombre = 'Quintuple Vet'
+);
 
 INSERT INTO vacunas (
   mascota_id,
@@ -529,28 +632,120 @@ INSERT INTO vacunas (
   proxima_fecha_aplicacion,
   numero_serie
 )
-VALUES
-  (1, 1, 1, '2024-08-20', '2025-08-20', 'RB-2024-001'),
-  (2, 2, 2, '2024-07-15', '2025-01-15', 'QV-2024-014');
+SELECT
+  (SELECT id FROM mascotas WHERE nombre = 'Nala' LIMIT 1),
+  (SELECT id FROM vacunas_nombres_comerciales WHERE nombre = 'Rabivac' LIMIT 1),
+  (SELECT id FROM vacunas_tipos WHERE nombre = 'Antirrábica' LIMIT 1),
+  '2024-08-20',
+  '2025-08-20',
+  'RB-2024-001'
+WHERE NOT EXISTS (
+  SELECT 1 FROM vacunas WHERE numero_serie = 'RB-2024-001'
+);
+
+INSERT INTO vacunas (
+  mascota_id,
+  nombre_comercial_id,
+  tipo_id,
+  fecha_aplicacion,
+  proxima_fecha_aplicacion,
+  numero_serie
+)
+SELECT
+  (SELECT id FROM mascotas WHERE nombre = 'Milo' LIMIT 1),
+  (SELECT id FROM vacunas_nombres_comerciales WHERE nombre = 'Quintuple Vet' LIMIT 1),
+  (SELECT id FROM vacunas_tipos WHERE nombre = 'Quíntuple' LIMIT 1),
+  '2024-07-15',
+  '2025-01-15',
+  'QV-2024-014'
+WHERE NOT EXISTS (
+  SELECT 1 FROM vacunas WHERE numero_serie = 'QV-2024-014'
+);
 
 INSERT INTO turnos (cliente_id, mascota_id, fecha, hora, motivo, estado)
-VALUES
-  (1, 1, '2024-10-02', '09:30:00', 'Consulta general', 'Pendiente'),
-  (2, 2, '2024-10-03', '11:00:00', 'Control postoperatorio', 'Terminado');
+SELECT
+  (SELECT id FROM clientes WHERE email = 'carolina@example.com' LIMIT 1),
+  (SELECT id FROM mascotas WHERE nombre = 'Nala' LIMIT 1),
+  '2024-10-02',
+  '09:30:00',
+  'Consulta general',
+  'Pendiente'
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM turnos
+  WHERE cliente_id = (SELECT id FROM clientes WHERE email = 'carolina@example.com' LIMIT 1)
+    AND mascota_id = (SELECT id FROM mascotas WHERE nombre = 'Nala' LIMIT 1)
+    AND fecha = '2024-10-02'
+    AND hora = '09:30:00'
+);
+
+INSERT INTO turnos (cliente_id, mascota_id, fecha, hora, motivo, estado)
+SELECT
+  (SELECT id FROM clientes WHERE email = 'miguel@example.com' LIMIT 1),
+  (SELECT id FROM mascotas WHERE nombre = 'Milo' LIMIT 1),
+  '2024-10-03',
+  '11:00:00',
+  'Control postoperatorio',
+  'Terminado'
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM turnos
+  WHERE cliente_id = (SELECT id FROM clientes WHERE email = 'miguel@example.com' LIMIT 1)
+    AND mascota_id = (SELECT id FROM mascotas WHERE nombre = 'Milo' LIMIT 1)
+    AND fecha = '2024-10-03'
+    AND hora = '11:00:00'
+);
 
 INSERT INTO motivos_turno (nombre)
-VALUES
-  ('Consulta general'),
-  ('Vacunación'),
-  ('Control postoperatorio'),
-  ('Urgencia');
+SELECT 'Consulta general'
+WHERE NOT EXISTS (
+  SELECT 1 FROM motivos_turno WHERE nombre = 'Consulta general'
+);
+
+INSERT INTO motivos_turno (nombre)
+SELECT 'Vacunación'
+WHERE NOT EXISTS (
+  SELECT 1 FROM motivos_turno WHERE nombre = 'Vacunación'
+);
+
+INSERT INTO motivos_turno (nombre)
+SELECT 'Control postoperatorio'
+WHERE NOT EXISTS (
+  SELECT 1 FROM motivos_turno WHERE nombre = 'Control postoperatorio'
+);
+
+INSERT INTO motivos_turno (nombre)
+SELECT 'Urgencia'
+WHERE NOT EXISTS (
+  SELECT 1 FROM motivos_turno WHERE nombre = 'Urgencia'
+);
 
 INSERT INTO mascotas_especies (nombre)
-VALUES
-  ('Perro'),
-  ('Gato');
+SELECT 'Perro'
+WHERE NOT EXISTS (
+  SELECT 1 FROM mascotas_especies WHERE nombre = 'Perro'
+);
+
+INSERT INTO mascotas_especies (nombre)
+SELECT 'Gato'
+WHERE NOT EXISTS (
+  SELECT 1 FROM mascotas_especies WHERE nombre = 'Gato'
+);
 
 INSERT INTO mascotas_razas (nombre, especie_id)
-VALUES
-  ('Golden Retriever', (SELECT id FROM mascotas_especies WHERE nombre = 'Perro')),
-  ('Siamés', (SELECT id FROM mascotas_especies WHERE nombre = 'Gato'));
+SELECT 'Golden Retriever', (SELECT id FROM mascotas_especies WHERE nombre = 'Perro' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM mascotas_razas
+  WHERE nombre = 'Golden Retriever'
+    AND especie_id = (SELECT id FROM mascotas_especies WHERE nombre = 'Perro' LIMIT 1)
+);
+
+INSERT INTO mascotas_razas (nombre, especie_id)
+SELECT 'Siamés', (SELECT id FROM mascotas_especies WHERE nombre = 'Gato' LIMIT 1)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM mascotas_razas
+  WHERE nombre = 'Siamés'
+    AND especie_id = (SELECT id FROM mascotas_especies WHERE nombre = 'Gato' LIMIT 1)
+);

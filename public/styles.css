@@ -255,6 +255,26 @@ body {
   padding: 2rem;
 }
 
+.cert-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.cert-section-title {
+  margin-top: 0.5rem;
+  font-weight: 700;
+  color: var(--vet-teal-dark);
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--vet-border);
+}
+
+@media (max-width: 767px) {
+  .cert-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .pet-hero {
   background: linear-gradient(140deg, #2f8d64 0%, #5fbf87 42%, #f39a3c 100%);
   border-radius: 30px;

@@ -236,24 +236,14 @@ const getCertificateBranding = (configuracionClinica) => {
   const clinicName = normalizeText(configuracionClinica?.veterinaria_nombre);
   const medicaNombre = normalizeText(configuracionClinica?.medica_nombre);
   const medicaMatricula = normalizeText(configuracionClinica?.medica_matricula);
-  const brandingLines = [];
-
-  if (medicaNombre) {
-    brandingLines.push(medicaNombre);
-  }
-  if (medicaMatricula) {
-    brandingLines.push(`Matrícula ${medicaMatricula}`);
-  }
-  if (clinicName) {
-    brandingLines.push(clinicName);
-  }
-  if (!brandingLines.length) {
-    brandingLines.push('Clínica Veterinaria');
-  }
+  const professionalLine = [medicaNombre, medicaMatricula ? `Matrícula ${medicaMatricula}` : '']
+    .filter(Boolean)
+    .join(' · ');
+  const clinicLine = clinicName || 'Clínica Veterinaria';
 
   return {
-    clinicName: clinicName || 'Clínica Veterinaria',
-    membrete: brandingLines.join('\n'),
+    professionalLine: professionalLine || 'Profesional veterinaria',
+    clinicLine,
   };
 };
 
@@ -261,33 +251,19 @@ const drawCertificateHeader = ({
   text,
   line,
   rect,
-  paragraph,
   configuracionClinica,
   titleLines,
   brandingBox = { x: 34, y: 33, width: 210, height: 26 },
 }) => {
-  const { clinicName, membrete } = getCertificateBranding(configuracionClinica);
-  const writeBrandingParagraph =
-    paragraph ||
-    ((x, topY, value, options = {}) => {
-      const { lineHeight = 9, ...textOptions } = options;
-      const lines = (value || '').split(/\n+/).filter(Boolean);
-      lines.forEach((entry, index) => {
-        text(x, topY + index * lineHeight, entry, textOptions);
-      });
-    });
+  const { professionalLine, clinicLine } = getCertificateBranding(configuracionClinica);
 
   rect(20, 18, 555, 805, 1);
   rect(brandingBox.x, brandingBox.y, brandingBox.width, brandingBox.height, 0.8);
-  writeBrandingParagraph(brandingBox.x + 8, brandingBox.y + 12, clinicName, {
+  text(brandingBox.x + 8, brandingBox.y + 12, professionalLine, {
     size: 8,
-    maxChars: 40,
-    lineHeight: 9,
   });
-  writeBrandingParagraph(brandingBox.x + 8, brandingBox.y + 22, membrete, {
+  text(brandingBox.x + 8, brandingBox.y + 22, clinicLine, {
     size: 8,
-    maxChars: 40,
-    lineHeight: 9,
   });
 
   let currentY = 110;
@@ -400,7 +376,6 @@ const generateLeishmaniasisCertificatePdf = ({ certificado, configuracionClinica
     text,
     line,
     rect,
-    paragraph,
     configuracionClinica,
     titleLines: [
       'CERTIFICADO PARA PRUEBA DETECCIÓN DE LA RESPUESTA',

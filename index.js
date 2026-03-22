@@ -39,6 +39,15 @@ const TAMANIOS_MASCOTA = new Set(['Grande', 'Mediano', 'Pequeño']);
 const HISTORIA_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'historia-clinica');
 const CONFIG_UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'configuracion');
 const CERTIFICADO_LEISHMANIASIS_RESULTADO = 'NEGATIVO';
+const CERTIFICADO_TIPO_DEFAULT = 'leishmaniasis';
+const CERTIFICADO_FOOTER = 'Versión 29.11.2021 – www.senasa.gob.ar';
+const CERTIFICATE_TYPE_LABELS = {
+  leishmaniasis: 'Leishmaniasis',
+  tratamiento_antiparasitario: 'Tratamiento antiparasitario',
+  implantacion_microchip_tatuaje: 'Implantación de microchip / tatuaje',
+  lectura_microchip_tatuaje: 'Lectura de microchip / tatuaje',
+  libre_miasis: 'Libre de miasis',
+};
 
 const getFieldValue = (field) => (Array.isArray(field) ? field[0] : field);
 
@@ -63,6 +72,16 @@ const escapePdfText = (value = '') =>
     .replace(/\\/g, '\\\\')
     .replace(/\(/g, '\\(')
     .replace(/\)/g, '\\)');
+
+const formatDateTimeValue = (value = '') => {
+  if (!value) return '';
+  const normalized = value.toString();
+  const match = normalized.match(/^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/);
+  if (match) {
+    return `${formatShortDate(match[1])} ${match[2]}`;
+  }
+  return normalized;
+};
 
 const buildSimplePdf = ({ width = 595.28, height = 841.89, content = '' }) => {
   const objects = [];
@@ -100,10 +119,7 @@ const buildSimplePdf = ({ width = 595.28, height = 841.89, content = '' }) => {
   return Buffer.from(pdf, 'latin1');
 };
 
-const generateLeishmaniasisCertificatePdf = ({
-  certificado,
-  configuracionClinica,
-}) => {
+const createPdfCanvas = () => {
   const pageWidth = 595.28;
   const pageHeight = 841.89;
   const cmds = [];
@@ -117,27 +133,61 @@ const generateLeishmaniasisCertificatePdf = ({
     const estimatedWidth = rawText.length * size * 0.45;
     const adjustedX =
       align === 'center' ? x - estimatedWidth / 2 : align === 'right' ? x - estimatedWidth : x;
-    cmds.push(`BT /${font} ${size} Tf 1 0 0 1 ${adjustedX.toFixed(2)} ${toPdfY(topY).toFixed(2)} Tm (${rawText}) Tj ET`);
+    cmds.push(
+      `BT /${font} ${size} Tf 1 0 0 1 ${adjustedX.toFixed(2)} ${toPdfY(topY).toFixed(2)} Tm (${rawText}) Tj ET`
+    );
   };
   const line = (x1, topY1, x2, topY2, width = 1) => {
-    cmds.push(`${width} w ${x1.toFixed(2)} ${toPdfY(topY1).toFixed(2)} m ${x2.toFixed(2)} ${toPdfY(topY2).toFixed(2)} l S`);
+    cmds.push(
+      `${width} w ${x1.toFixed(2)} ${toPdfY(topY1).toFixed(2)} m ${x2.toFixed(2)} ${toPdfY(topY2).toFixed(2)} l S`
+    );
   };
   const rect = (x, topY, w, h, width = 1) => {
-    cmds.push(`${width} w ${x.toFixed(2)} ${toPdfY(topY + h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`);
+    cmds.push(
+      `${width} w ${x.toFixed(2)} ${toPdfY(topY + h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`
+    );
+  };
+  const paragraph = (x, topY, value, options = {}) => {
+    const { maxChars = 88, lineHeight = 12, ...textOptions } = options;
+    const words = (value || '').split(/\s+/).filter(Boolean);
+    if (!words.length) {
+      return topY;
+    }
+    let currentLine = '';
+    let currentY = topY;
+    words.forEach((word) => {
+      const nextLine = currentLine ? `${currentLine} ${word}` : word;
+      if (nextLine.length > maxChars && currentLine) {
+        text(x, currentY, currentLine, textOptions);
+        currentLine = word;
+        currentY += lineHeight;
+        return;
+      }
+      currentLine = nextLine;
+    });
+    if (currentLine) {
+      text(x, currentY, currentLine, textOptions);
+    }
+    return currentY;
   };
 
+  return { pageWidth, pageHeight, cmds, text, line, rect, paragraph };
+};
+
+const getCertificateBranding = (configuracionClinica) => {
   const clinicName =
     normalizeText(configuracionClinica?.veterinaria_nombre) || 'Clínica Veterinaria';
   const medicaNombre = normalizeText(configuracionClinica?.medica_nombre);
   const medicaMatricula = normalizeText(configuracionClinica?.medica_matricula);
-  const sexo = normalizeText(certificado.animal_sexo) || 'Macho';
-  const sexoOpuesto = sexo === 'Macho' ? 'Hembra' : 'Macho';
-  const condicion =
-    normalizeText(certificado.animal_condicion_reproductiva) || 'Entero';
-  const condicionOpuesta = condicion === 'Entero' ? 'Castrado' : 'Entero';
   const membrete = medicaNombre
     ? `${medicaNombre}${medicaMatricula ? ` · Matrícula ${medicaMatricula}` : ''}`
     : 'Membrete del profesional actuante y/o clínica veterinaria';
+
+  return { clinicName, membrete };
+};
+
+const drawCertificateHeader = ({ text, line, rect, configuracionClinica, titleLines }) => {
+  const { clinicName, membrete } = getCertificateBranding(configuracionClinica);
 
   rect(20, 18, 555, 805, 1);
   rect(34, 33, 210, 26, 0.8);
@@ -153,20 +203,24 @@ const generateLeishmaniasisCertificatePdf = ({
     size: 7,
     align: 'center',
   });
-  text(
-    297.5,
-    122,
-    'CERTIFICADO PARA PRUEBA DE DETECCIÓN DE LA RESPUESTA',
-    { font: 'F2', size: 11, align: 'center' }
-  );
-  text(297.5, 136, 'INMUNITARIA NEGATIVA A LEISHMANIASIS', {
-    font: 'F2',
-    size: 11,
-    align: 'center',
-  });
-  line(100, 141, 495, 141, 1);
 
-  text(55, 176, `Nombre y Apellido del propietario: ${certificado.propietario_nombre || ''}`, { size: 9 });
+  let currentY = 122;
+  titleLines.forEach((title) => {
+    text(297.5, currentY, title, { font: 'F2', size: 11, align: 'center' });
+    currentY += 14;
+  });
+  line(100, currentY - 5, 495, currentY - 5, 1);
+};
+
+const drawCertificateOwnerAnimalSection = ({ text, line, certificado }) => {
+  const sexo = normalizeText(certificado.animal_sexo) || 'Macho';
+  const sexoOpuesto = sexo === 'Macho' ? 'Hembra' : 'Macho';
+  const condicion = normalizeText(certificado.animal_condicion_reproductiva) || 'Entero';
+  const condicionOpuesta = condicion === 'Entero' ? 'Castrado' : 'Entero';
+
+  text(55, 176, `Nombre y Apellido del propietario: ${certificado.propietario_nombre || ''}`, {
+    size: 9,
+  });
   line(245, 179, 540, 179, 0.7);
   text(
     55,
@@ -186,38 +240,59 @@ const generateLeishmaniasisCertificatePdf = ({
   text(55, 250, 'Datos del animal:', { font: 'F2', size: 10 });
   text(55, 272, `Nombre: ${certificado.animal_nombre || ''}`, { size: 9 });
   line(95, 275, 540, 275, 0.7);
-
-  text(84, 297, (certificado.animal_especie || 'CANINO').toUpperCase(), {
-    size: 9,
-  });
-  text(265, 297, `${sexo.toUpperCase()} / ${sexoOpuesto.toUpperCase()}`, {
-    size: 9,
-  });
-  text(
-    420,
-    297,
-    `${condicion.toUpperCase()} / ${condicionOpuesta.toUpperCase()}`,
-    { size: 9 }
-  );
+  text(84, 297, (certificado.animal_especie || 'CANINO').toUpperCase(), { size: 9 });
+  text(265, 297, `${sexo.toUpperCase()} / ${sexoOpuesto.toUpperCase()}`, { size: 9 });
+  text(420, 297, `${condicion.toUpperCase()} / ${condicionOpuesta.toUpperCase()}`, { size: 9 });
   text(355, 313, '(Tachar lo que no corresponda)', { size: 7, align: 'center' });
-
   text(
     55,
     340,
-    `Edad (Años y meses): ${certificado.animal_edad || ''}    Fecha de nacimiento: ${formatShortDate(
-      certificado.animal_fecha_nacimiento
-    ) || '....../....../..........'}`,
+    `Edad (Años y meses): ${certificado.animal_edad || ''}    Fecha de nacimiento: ${
+      formatShortDate(certificado.animal_fecha_nacimiento) || '....../....../..........'
+    }`,
     { size: 9 }
   );
   line(162, 343, 335, 343, 0.7);
   line(445, 343, 540, 343, 0.7);
   text(55, 360, `Peso: ${certificado.animal_peso || ''}`, { size: 9 });
   line(85, 363, 205, 363, 0.7);
-  text(55, 380, `Raza: ${certificado.animal_raza || ''}    Pelaje: ${certificado.animal_pelaje || ''}`, { size: 9 });
+  text(55, 380, `Raza: ${certificado.animal_raza || ''}    Pelaje: ${certificado.animal_pelaje || ''}`, {
+    size: 9,
+  });
   line(84, 383, 292, 383, 0.7);
   line(338, 383, 540, 383, 0.7);
-  text(55, 400, `N° de Microchip (si corresponde): ${certificado.animal_microchip || ''}`, { size: 9 });
+  text(55, 400, `N° de Microchip (si corresponde): ${certificado.animal_microchip || ''}`, {
+    size: 9,
+  });
   line(200, 403, 540, 403, 0.7);
+};
+
+const drawCertificateFooter = ({ text, line, footerText = CERTIFICADO_FOOTER }) => {
+  line(34, 795, 555, 795, 0.8);
+  text(40, 807, footerText, { size: 7 });
+};
+
+const finalizeCertificatePdf = ({ pageWidth, pageHeight, cmds }) =>
+  buildSimplePdf({
+    width: pageWidth,
+    height: pageHeight,
+    content: cmds.join('\n'),
+  });
+
+const generateLeishmaniasisCertificatePdf = ({ certificado, configuracionClinica }) => {
+  const { pageWidth, pageHeight, cmds, text, line, rect } = createPdfCanvas();
+
+  drawCertificateHeader({
+    text,
+    line,
+    rect,
+    configuracionClinica,
+    titleLines: [
+      'CERTIFICADO PARA PRUEBA DE DETECCIÓN DE LA RESPUESTA',
+      'INMUNITARIA NEGATIVA A LEISHMANIASIS',
+    ],
+  });
+  drawCertificateOwnerAnimalSection({ text, line, certificado });
 
   text(55, 435, 'DATOS DE LA MUESTRA', { font: 'F2', size: 10 });
   text(
@@ -256,15 +331,184 @@ const generateLeishmaniasisCertificatePdf = ({
   line(126, 651, 250, 651, 0.7);
   text(400, 705, 'Firma y Sello del Profesional Actuante', { size: 9, align: 'center' });
   line(340, 692, 520, 692, 0.7);
+  drawCertificateFooter({ text, line });
 
-  line(34, 795, 555, 795, 0.8);
-  text(40, 807, 'Versión 29.11.2021 – www.senasa.gob.ar', { size: 7 });
+  return finalizeCertificatePdf({ pageWidth, pageHeight, cmds });
+};
 
-  return buildSimplePdf({
-    width: pageWidth,
-    height: pageHeight,
-    content: cmds.join('\n'),
+const generateTratamientoAntiparasitarioCertificatePdf = ({ certificado, configuracionClinica }) => {
+  const { pageWidth, pageHeight, cmds, text, line, rect, paragraph } = createPdfCanvas();
+
+  drawCertificateHeader({
+    text,
+    line,
+    rect,
+    configuracionClinica,
+    titleLines: ['CERTIFICADO DE TRATAMIENTO ANTIPARASITARIO'],
   });
+  drawCertificateOwnerAnimalSection({ text, line, certificado });
+
+  text(55, 435, 'ANTIPARASITARIO INTERNO:', { font: 'F2', size: 10 });
+  text(55, 463, `Fecha y Hora: ${formatDateTimeValue(certificado.interno_fecha_hora)}`, { size: 9 });
+  line(118, 466, 240, 466, 0.7);
+  text(
+    55,
+    483,
+    `Nombre comercial y laboratorio elaborador: ${certificado.interno_nombre_comercial || ''}`,
+    { size: 9 }
+  );
+  line(240, 486, 540, 486, 0.7);
+  text(55, 503, `Composición (Drogas): ${certificado.interno_composicion || ''}`, { size: 9 });
+  line(155, 506, 540, 506, 0.7);
+  text(
+    55,
+    523,
+    `Dosis administrada: ${certificado.interno_dosis || ''}    Vía de administración: ${certificado.interno_via || ''}`,
+    { size: 9 }
+  );
+  line(138, 526, 300, 526, 0.7);
+  line(410, 526, 540, 526, 0.7);
+
+  text(55, 555, 'ANTIPARASITARIO EXTERNO:', { font: 'F2', size: 10 });
+  text(55, 583, `Fecha y Hora: ${formatDateTimeValue(certificado.externo_fecha_hora)}`, { size: 9 });
+  line(118, 586, 240, 586, 0.7);
+  text(
+    55,
+    603,
+    `Nombre comercial y laboratorio elaborador: ${certificado.externo_nombre_comercial || ''}`,
+    { size: 9 }
+  );
+  line(240, 606, 540, 606, 0.7);
+  text(55, 623, `Composición (Drogas): ${certificado.externo_composicion || ''}`, { size: 9 });
+  line(155, 626, 540, 626, 0.7);
+  text(
+    55,
+    643,
+    `Dosis administrada: ${certificado.externo_dosis || ''}    Vía de administración: ${certificado.externo_via || ''}`,
+    { size: 9 }
+  );
+  line(138, 646, 300, 646, 0.7);
+  line(410, 646, 540, 646, 0.7);
+
+  text(55, 675, 'Observaciones:', { size: 9 });
+  const observacionBottom = paragraph(125, 675, certificado.observaciones || '', {
+    size: 9,
+    maxChars: 74,
+    lineHeight: 11,
+  });
+  line(125, 678, 540, 678, 0.7);
+  if (observacionBottom > 675) {
+    line(125, observacionBottom + 3, 540, observacionBottom + 3, 0.7);
+  }
+
+  text(55, 725, `${certificado.lugar_fecha || 'LUGAR Y FECHA'} `, { size: 9 });
+  line(150, 728, 275, 728, 0.7);
+  text(400, 760, 'Firma y Sello del Profesional Actuante', { size: 9, align: 'center' });
+  line(340, 747, 520, 747, 0.7);
+  drawCertificateFooter({ text, line });
+
+  return finalizeCertificatePdf({ pageWidth, pageHeight, cmds });
+};
+
+const generateImplantacionMicrochipCertificatePdf = ({ certificado, configuracionClinica }) => {
+  const { pageWidth, pageHeight, cmds, text, line, rect, paragraph } = createPdfCanvas();
+
+  drawCertificateHeader({
+    text,
+    line,
+    rect,
+    configuracionClinica,
+    titleLines: ['CERTIFICADO DE IMPLANTACIÓN DE MICROCHIP Y/O TATUAJE'],
+  });
+  drawCertificateOwnerAnimalSection({ text, line, certificado });
+
+  text(55, 440, 'DATOS DE IMPLANTACIÓN / TATUAJE', { font: 'F2', size: 10 });
+  text(
+    55,
+    468,
+    `Fecha de implantación de microchip / tatuaje: ${formatShortDate(certificado.fecha_implantacion) || '....../....../..........'}`,
+    { size: 9 }
+  );
+  line(245, 471, 395, 471, 0.7);
+  text(55, 500, 'Lugar / región anatómica de implantación o tatuaje:', { size: 9 });
+  paragraph(55, 515, certificado.lugar_implantacion || '', {
+    size: 9,
+    maxChars: 88,
+    lineHeight: 11,
+  });
+  line(55, 528, 540, 528, 0.7);
+  rect(45, 555, 500, 28, 0.8);
+  paragraph(
+    52,
+    569,
+    'Los MICROCHIPS deberán ser compatibles con las normas ISO Nº 11784 o 11785 y en caso de tatuaje deberá ser CLARAMENTE VISIBLE',
+    { font: 'F2', size: 7, maxChars: 90, lineHeight: 9 }
+  );
+
+  text(55, 630, `${certificado.lugar_fecha || 'LUGAR Y FECHA'} `, { size: 9 });
+  line(150, 633, 275, 633, 0.7);
+  text(400, 690, 'Firma y Sello del Profesional Actuante', { size: 9, align: 'center' });
+  line(340, 677, 520, 677, 0.7);
+  drawCertificateFooter({ text, line });
+
+  return finalizeCertificatePdf({ pageWidth, pageHeight, cmds });
+};
+
+const generateLecturaMicrochipCertificatePdf = ({ certificado, configuracionClinica }) => {
+  const { pageWidth, pageHeight, cmds, text, line, rect, paragraph } = createPdfCanvas();
+
+  drawCertificateHeader({
+    text,
+    line,
+    rect,
+    configuracionClinica,
+    titleLines: ['CERTIFICADO DE LECTURA DE MICROCHIP Y/O TATUAJE'],
+  });
+  drawCertificateOwnerAnimalSection({ text, line, certificado });
+
+  text(55, 440, 'DECLARACIÓN DE LECTURA', { font: 'F2', size: 10 });
+  const lecturaDetalle = normalizeText(certificado.detalle_lectura);
+  const declaracion =
+    'Por medio de la presente certifico que el día de la fecha se realizó la lectura del MICROCHIP / TATUAJE del CANINO/FELINO detallado en la presente y el mismo se encuentra ubicado en ' +
+    (lecturaDetalle ? `${lecturaDetalle}.` : '(..... de lugar / región anatómica).');
+  paragraph(55, 472, declaracion, { size: 9, maxChars: 92, lineHeight: 12 });
+
+  text(55, 610, `${certificado.lugar_fecha || 'LUGAR Y FECHA'} `, { size: 9 });
+  line(150, 613, 275, 613, 0.7);
+  text(400, 670, 'Firma y Sello del Profesional Actuante', { size: 9, align: 'center' });
+  line(340, 657, 520, 657, 0.7);
+  drawCertificateFooter({ text, line });
+
+  return finalizeCertificatePdf({ pageWidth, pageHeight, cmds });
+};
+
+const generateLibreMiasisCertificatePdf = ({ certificado, configuracionClinica }) => {
+  const { pageWidth, pageHeight, cmds, text, line, rect, paragraph } = createPdfCanvas();
+
+  drawCertificateHeader({
+    text,
+    line,
+    rect,
+    configuracionClinica,
+    titleLines: ['CERTIFICADO DE LIBRE DE MIASIS'],
+  });
+  drawCertificateOwnerAnimalSection({ text, line, certificado });
+
+  text(55, 440, 'DECLARACIÓN', { font: 'F2', size: 10 });
+  paragraph(
+    55,
+    475,
+    'Por medio de la presente CERTIFICO QUE AL DÍA DE LA FECHA dicho animal se encuentra libre de miasis provocada por el Gusano Barrenador o Cochliomyia hominivorax.',
+    { font: 'F2', size: 9, maxChars: 84, lineHeight: 14 }
+  );
+
+  text(55, 600, `${certificado.lugar_fecha || 'LUGAR Y FECHA'} `, { size: 9 });
+  line(150, 603, 275, 603, 0.7);
+  text(400, 660, 'Firma y Sello del Profesional Actuante', { size: 9, align: 'center' });
+  line(340, 647, 520, 647, 0.7);
+  drawCertificateFooter({ text, line });
+
+  return finalizeCertificatePdf({ pageWidth, pageHeight, cmds });
 };
 
 const ensureConfiguracionClinicaTable = async () => {
@@ -321,7 +565,138 @@ const ensureCertificadosLeishmaniasisTable = async () => {
   );
 };
 
+const ensureCertificadosTratamientosAntiparasitariosTable = async () => {
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS certificados_tratamientos_antiparasitarios (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      mascota_id INT NOT NULL,
+      propietario_nombre VARCHAR(255) NOT NULL,
+      propietario_documento_tipo VARCHAR(80) NULL,
+      propietario_documento_numero VARCHAR(80) NULL,
+      propietario_direccion VARCHAR(255) NULL,
+      animal_nombre VARCHAR(120) NOT NULL,
+      animal_especie VARCHAR(80) NOT NULL DEFAULT 'Canino',
+      animal_sexo VARCHAR(20) NULL,
+      animal_condicion_reproductiva VARCHAR(20) NULL,
+      animal_edad VARCHAR(80) NULL,
+      animal_fecha_nacimiento DATE NULL,
+      animal_peso VARCHAR(40) NULL,
+      animal_raza VARCHAR(120) NULL,
+      animal_pelaje VARCHAR(120) NULL,
+      animal_microchip VARCHAR(120) NULL,
+      interno_fecha_hora VARCHAR(80) NULL,
+      interno_nombre_comercial VARCHAR(255) NULL,
+      interno_composicion VARCHAR(255) NULL,
+      interno_dosis VARCHAR(255) NULL,
+      interno_via VARCHAR(120) NULL,
+      externo_fecha_hora VARCHAR(80) NULL,
+      externo_nombre_comercial VARCHAR(255) NULL,
+      externo_composicion VARCHAR(255) NULL,
+      externo_dosis VARCHAR(255) NULL,
+      externo_via VARCHAR(120) NULL,
+      observaciones TEXT NULL,
+      lugar_fecha VARCHAR(255) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_certificado_tratamiento_antiparasitario_mascota
+        FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
+        ON DELETE CASCADE
+    )`
+  );
+};
+
+const ensureCertificadosImplantacionMicrochipTable = async () => {
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS certificados_implantacion_microchip_tatuaje (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      mascota_id INT NOT NULL,
+      propietario_nombre VARCHAR(255) NOT NULL,
+      propietario_documento_tipo VARCHAR(80) NULL,
+      propietario_documento_numero VARCHAR(80) NULL,
+      propietario_direccion VARCHAR(255) NULL,
+      animal_nombre VARCHAR(120) NOT NULL,
+      animal_especie VARCHAR(80) NOT NULL DEFAULT 'Canino',
+      animal_sexo VARCHAR(20) NULL,
+      animal_condicion_reproductiva VARCHAR(20) NULL,
+      animal_edad VARCHAR(80) NULL,
+      animal_fecha_nacimiento DATE NULL,
+      animal_peso VARCHAR(40) NULL,
+      animal_raza VARCHAR(120) NULL,
+      animal_pelaje VARCHAR(120) NULL,
+      animal_microchip VARCHAR(120) NULL,
+      fecha_implantacion DATE NULL,
+      lugar_implantacion VARCHAR(255) NULL,
+      lugar_fecha VARCHAR(255) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_certificado_implantacion_microchip_mascota
+        FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
+        ON DELETE CASCADE
+    )`
+  );
+};
+
+const ensureCertificadosLecturaMicrochipTable = async () => {
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS certificados_lectura_microchip_tatuaje (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      mascota_id INT NOT NULL,
+      propietario_nombre VARCHAR(255) NOT NULL,
+      propietario_documento_tipo VARCHAR(80) NULL,
+      propietario_documento_numero VARCHAR(80) NULL,
+      propietario_direccion VARCHAR(255) NULL,
+      animal_nombre VARCHAR(120) NOT NULL,
+      animal_especie VARCHAR(80) NOT NULL DEFAULT 'Canino',
+      animal_sexo VARCHAR(20) NULL,
+      animal_condicion_reproductiva VARCHAR(20) NULL,
+      animal_edad VARCHAR(80) NULL,
+      animal_fecha_nacimiento DATE NULL,
+      animal_peso VARCHAR(40) NULL,
+      animal_raza VARCHAR(120) NULL,
+      animal_pelaje VARCHAR(120) NULL,
+      animal_microchip VARCHAR(120) NULL,
+      detalle_lectura VARCHAR(255) NULL,
+      lugar_fecha VARCHAR(255) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_certificado_lectura_microchip_mascota
+        FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
+        ON DELETE CASCADE
+    )`
+  );
+};
+
+const ensureCertificadosLibreMiasisTable = async () => {
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS certificados_libre_miasis (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      mascota_id INT NOT NULL,
+      propietario_nombre VARCHAR(255) NOT NULL,
+      propietario_documento_tipo VARCHAR(80) NULL,
+      propietario_documento_numero VARCHAR(80) NULL,
+      propietario_direccion VARCHAR(255) NULL,
+      animal_nombre VARCHAR(120) NOT NULL,
+      animal_especie VARCHAR(80) NOT NULL DEFAULT 'Canino',
+      animal_sexo VARCHAR(20) NULL,
+      animal_condicion_reproductiva VARCHAR(20) NULL,
+      animal_edad VARCHAR(80) NULL,
+      animal_fecha_nacimiento DATE NULL,
+      animal_peso VARCHAR(40) NULL,
+      animal_raza VARCHAR(120) NULL,
+      animal_pelaje VARCHAR(120) NULL,
+      animal_microchip VARCHAR(120) NULL,
+      lugar_fecha VARCHAR(255) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_certificado_libre_miasis_mascota
+        FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
+        ON DELETE CASCADE
+    )`
+  );
+};
+
 const getConfiguracionClinica = async () => {
+
   const [rows] = await pool.query(
     `SELECT veterinaria_nombre, medica_nombre, medica_matricula, logo_ruta
      FROM configuracion_clinica
@@ -1067,10 +1442,84 @@ app.get(
   })
 );
 
+const getCommonCertificatePayload = (body) => ({
+  mascota_id: body.mascota_id,
+  propietario_nombre: normalizeText(body.propietario_nombre),
+  propietario_documento_tipo: normalizeText(body.propietario_documento_tipo) || null,
+  propietario_documento_numero: normalizeText(body.propietario_documento_numero) || null,
+  propietario_direccion: normalizeText(body.propietario_direccion) || null,
+  animal_nombre: normalizeText(body.animal_nombre),
+  animal_especie: normalizeText(body.animal_especie) || 'Canino',
+  animal_sexo: normalizeText(body.animal_sexo) || null,
+  animal_condicion_reproductiva: normalizeText(body.animal_condicion_reproductiva) || null,
+  animal_edad: normalizeText(body.animal_edad) || null,
+  animal_fecha_nacimiento: body.animal_fecha_nacimiento || null,
+  animal_peso: normalizeText(body.animal_peso) || null,
+  animal_raza: normalizeText(body.animal_raza) || null,
+  animal_pelaje: normalizeText(body.animal_pelaje) || null,
+  animal_microchip: normalizeText(body.animal_microchip) || null,
+  lugar_fecha: normalizeText(body.lugar_fecha) || null,
+});
+
+const getCertificateListQuery = (tableName) =>
+  `SELECT ${tableName}.*,
+          mascotas.nombre AS mascota_nombre,
+          clientes.nombre AS cliente_nombre
+   FROM ${tableName}
+   JOIN mascotas ON mascotas.id = ${tableName}.mascota_id
+   JOIN clientes ON clientes.id = mascotas.cliente_id`;
+
+const loadCertificateRows = async (tableName, selectedMascotaId) => {
+  let query = getCertificateListQuery(tableName);
+  const params = [];
+  if (selectedMascotaId) {
+    query += ` WHERE ${tableName}.mascota_id = ?`;
+    params.push(selectedMascotaId);
+  }
+  query += ` ORDER BY ${tableName}.created_at DESC, ${tableName}.id DESC`;
+  const [rows] = await pool.query(query, params);
+  return rows;
+};
+
+const loadCertificateRecordById = async (tableName, id) => {
+  const [rows] = await pool.query(
+    `SELECT ${tableName}.*,
+            mascotas.nombre AS mascota_nombre,
+            mascotas.especie AS mascota_especie,
+            mascotas.raza AS mascota_raza,
+            mascotas.sexo AS mascota_sexo,
+            clientes.nombre AS cliente_nombre
+     FROM ${tableName}
+     JOIN mascotas ON mascotas.id = ${tableName}.mascota_id
+     JOIN clientes ON clientes.id = mascotas.cliente_id
+     WHERE ${tableName}.id = ?`,
+    [id]
+  );
+
+  return rows[0] || null;
+};
+
+const redirectToCertificates = (res, tipo, mascotaId = '') => {
+  const params = new URLSearchParams();
+  if (tipo) {
+    params.set('tipo', tipo);
+  }
+  if (mascotaId) {
+    params.set('mascota_id', mascotaId);
+  }
+  const suffix = params.toString();
+  res.redirect(suffix ? `/certificados?${suffix}` : '/certificados');
+};
+
 app.get(
   '/certificados',
   asyncHandler(async (req, res) => {
     const selectedMascotaId = req.query.mascota_id ? String(req.query.mascota_id) : '';
+    const selectedCertificateType =
+      req.query.tipo && CERTIFICATE_TYPE_LABELS[req.query.tipo]
+        ? req.query.tipo
+        : CERTIFICADO_TIPO_DEFAULT;
+
     const [mascotas] = await pool.query(
       `SELECT mascotas.id,
               mascotas.nombre,
@@ -1086,26 +1535,31 @@ app.get(
        ORDER BY mascotas.nombre`
     );
 
-    let certificadosQuery =
-      `SELECT certificados_leishmaniasis.*,
-              mascotas.nombre AS mascota_nombre,
-              clientes.nombre AS cliente_nombre
-       FROM certificados_leishmaniasis
-       JOIN mascotas ON mascotas.id = certificados_leishmaniasis.mascota_id
-       JOIN clientes ON clientes.id = mascotas.cliente_id`;
-    const certificadoParams = [];
-    if (selectedMascotaId) {
-      certificadosQuery += ' WHERE certificados_leishmaniasis.mascota_id = ?';
-      certificadoParams.push(selectedMascotaId);
-    }
-    certificadosQuery += ' ORDER BY certificados_leishmaniasis.created_at DESC, certificados_leishmaniasis.id DESC';
-    const [certificados] = await pool.query(certificadosQuery, certificadoParams);
+    const [
+      certificadosLeishmaniasis,
+      certificadosTratamientosAntiparasitarios,
+      certificadosImplantacionMicrochip,
+      certificadosLecturaMicrochip,
+      certificadosLibreMiasis,
+    ] = await Promise.all([
+      loadCertificateRows('certificados_leishmaniasis', selectedMascotaId),
+      loadCertificateRows('certificados_tratamientos_antiparasitarios', selectedMascotaId),
+      loadCertificateRows('certificados_implantacion_microchip_tatuaje', selectedMascotaId),
+      loadCertificateRows('certificados_lectura_microchip_tatuaje', selectedMascotaId),
+      loadCertificateRows('certificados_libre_miasis', selectedMascotaId),
+    ]);
 
     res.render('certificados', {
       mascotas,
-      certificados,
       selectedMascotaId,
+      selectedCertificateType,
       certificadoResultadoDefault: CERTIFICADO_LEISHMANIASIS_RESULTADO,
+      certificadosLeishmaniasis,
+      certificadosTratamientosAntiparasitarios,
+      certificadosImplantacionMicrochip,
+      certificadosLecturaMicrochip,
+      certificadosLibreMiasis,
+      certificateTypeLabels: CERTIFICATE_TYPE_LABELS,
     });
   })
 );
@@ -1113,30 +1567,7 @@ app.get(
 app.post(
   '/certificados/leishmaniasis',
   asyncHandler(async (req, res) => {
-    const {
-      mascota_id,
-      propietario_nombre,
-      propietario_documento_tipo,
-      propietario_documento_numero,
-      propietario_direccion,
-      animal_nombre,
-      animal_especie,
-      animal_sexo,
-      animal_condicion_reproductiva,
-      animal_edad,
-      animal_fecha_nacimiento,
-      animal_peso,
-      animal_raza,
-      animal_pelaje,
-      animal_microchip,
-      fecha_toma_muestra,
-      metodo_diagnostico,
-      laboratorio_diagnostico,
-      fecha_resultado,
-      resultado,
-      lugar_fecha,
-    } = req.body;
-
+    const common = getCommonCertificatePayload(req.body);
     await pool.query(
       `INSERT INTO certificados_leishmaniasis (
         mascota_id,
@@ -1162,69 +1593,368 @@ app.post(
         lugar_fecha
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        mascota_id,
-        normalizeText(propietario_nombre),
-        normalizeText(propietario_documento_tipo) || null,
-        normalizeText(propietario_documento_numero) || null,
-        normalizeText(propietario_direccion) || null,
-        normalizeText(animal_nombre),
-        normalizeText(animal_especie) || 'Canino',
-        normalizeText(animal_sexo) || null,
-        normalizeText(animal_condicion_reproductiva) || null,
-        normalizeText(animal_edad) || null,
-        animal_fecha_nacimiento || null,
-        normalizeText(animal_peso) || null,
-        normalizeText(animal_raza) || null,
-        normalizeText(animal_pelaje) || null,
-        normalizeText(animal_microchip) || null,
-        fecha_toma_muestra || null,
-        normalizeText(metodo_diagnostico) || null,
-        normalizeText(laboratorio_diagnostico) || null,
-        fecha_resultado || null,
-        normalizeText(resultado) || CERTIFICADO_LEISHMANIASIS_RESULTADO,
-        normalizeText(lugar_fecha) || null,
+        common.mascota_id,
+        common.propietario_nombre,
+        common.propietario_documento_tipo,
+        common.propietario_documento_numero,
+        common.propietario_direccion,
+        common.animal_nombre,
+        common.animal_especie,
+        common.animal_sexo,
+        common.animal_condicion_reproductiva,
+        common.animal_edad,
+        common.animal_fecha_nacimiento,
+        common.animal_peso,
+        common.animal_raza,
+        common.animal_pelaje,
+        common.animal_microchip,
+        req.body.fecha_toma_muestra || null,
+        normalizeText(req.body.metodo_diagnostico) || null,
+        normalizeText(req.body.laboratorio_diagnostico) || null,
+        req.body.fecha_resultado || null,
+        normalizeText(req.body.resultado) || CERTIFICADO_LEISHMANIASIS_RESULTADO,
+        common.lugar_fecha,
       ]
     );
 
-    res.redirect('/certificados');
+    redirectToCertificates(res, 'leishmaniasis', common.mascota_id);
+  })
+);
+
+app.post(
+  '/certificados/tratamiento-antiparasitario',
+  asyncHandler(async (req, res) => {
+    const common = getCommonCertificatePayload(req.body);
+    await pool.query(
+      `INSERT INTO certificados_tratamientos_antiparasitarios (
+        mascota_id,
+        propietario_nombre,
+        propietario_documento_tipo,
+        propietario_documento_numero,
+        propietario_direccion,
+        animal_nombre,
+        animal_especie,
+        animal_sexo,
+        animal_condicion_reproductiva,
+        animal_edad,
+        animal_fecha_nacimiento,
+        animal_peso,
+        animal_raza,
+        animal_pelaje,
+        animal_microchip,
+        interno_fecha_hora,
+        interno_nombre_comercial,
+        interno_composicion,
+        interno_dosis,
+        interno_via,
+        externo_fecha_hora,
+        externo_nombre_comercial,
+        externo_composicion,
+        externo_dosis,
+        externo_via,
+        observaciones,
+        lugar_fecha
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        common.mascota_id,
+        common.propietario_nombre,
+        common.propietario_documento_tipo,
+        common.propietario_documento_numero,
+        common.propietario_direccion,
+        common.animal_nombre,
+        common.animal_especie,
+        common.animal_sexo,
+        common.animal_condicion_reproductiva,
+        common.animal_edad,
+        common.animal_fecha_nacimiento,
+        common.animal_peso,
+        common.animal_raza,
+        common.animal_pelaje,
+        common.animal_microchip,
+        normalizeText(req.body.interno_fecha_hora) || null,
+        normalizeText(req.body.interno_nombre_comercial) || null,
+        normalizeText(req.body.interno_composicion) || null,
+        normalizeText(req.body.interno_dosis) || null,
+        normalizeText(req.body.interno_via) || null,
+        normalizeText(req.body.externo_fecha_hora) || null,
+        normalizeText(req.body.externo_nombre_comercial) || null,
+        normalizeText(req.body.externo_composicion) || null,
+        normalizeText(req.body.externo_dosis) || null,
+        normalizeText(req.body.externo_via) || null,
+        normalizeText(req.body.observaciones) || null,
+        common.lugar_fecha,
+      ]
+    );
+
+    redirectToCertificates(res, 'tratamiento_antiparasitario', common.mascota_id);
+  })
+);
+
+app.post(
+  '/certificados/implantacion-microchip-tatuaje',
+  asyncHandler(async (req, res) => {
+    const common = getCommonCertificatePayload(req.body);
+    await pool.query(
+      `INSERT INTO certificados_implantacion_microchip_tatuaje (
+        mascota_id,
+        propietario_nombre,
+        propietario_documento_tipo,
+        propietario_documento_numero,
+        propietario_direccion,
+        animal_nombre,
+        animal_especie,
+        animal_sexo,
+        animal_condicion_reproductiva,
+        animal_edad,
+        animal_fecha_nacimiento,
+        animal_peso,
+        animal_raza,
+        animal_pelaje,
+        animal_microchip,
+        fecha_implantacion,
+        lugar_implantacion,
+        lugar_fecha
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        common.mascota_id,
+        common.propietario_nombre,
+        common.propietario_documento_tipo,
+        common.propietario_documento_numero,
+        common.propietario_direccion,
+        common.animal_nombre,
+        common.animal_especie,
+        common.animal_sexo,
+        common.animal_condicion_reproductiva,
+        common.animal_edad,
+        common.animal_fecha_nacimiento,
+        common.animal_peso,
+        common.animal_raza,
+        common.animal_pelaje,
+        common.animal_microchip,
+        req.body.fecha_implantacion || null,
+        normalizeText(req.body.lugar_implantacion) || null,
+        common.lugar_fecha,
+      ]
+    );
+
+    redirectToCertificates(res, 'implantacion_microchip_tatuaje', common.mascota_id);
+  })
+);
+
+app.post(
+  '/certificados/lectura-microchip-tatuaje',
+  asyncHandler(async (req, res) => {
+    const common = getCommonCertificatePayload(req.body);
+    await pool.query(
+      `INSERT INTO certificados_lectura_microchip_tatuaje (
+        mascota_id,
+        propietario_nombre,
+        propietario_documento_tipo,
+        propietario_documento_numero,
+        propietario_direccion,
+        animal_nombre,
+        animal_especie,
+        animal_sexo,
+        animal_condicion_reproductiva,
+        animal_edad,
+        animal_fecha_nacimiento,
+        animal_peso,
+        animal_raza,
+        animal_pelaje,
+        animal_microchip,
+        detalle_lectura,
+        lugar_fecha
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        common.mascota_id,
+        common.propietario_nombre,
+        common.propietario_documento_tipo,
+        common.propietario_documento_numero,
+        common.propietario_direccion,
+        common.animal_nombre,
+        common.animal_especie,
+        common.animal_sexo,
+        common.animal_condicion_reproductiva,
+        common.animal_edad,
+        common.animal_fecha_nacimiento,
+        common.animal_peso,
+        common.animal_raza,
+        common.animal_pelaje,
+        common.animal_microchip,
+        normalizeText(req.body.detalle_lectura) || null,
+        common.lugar_fecha,
+      ]
+    );
+
+    redirectToCertificates(res, 'lectura_microchip_tatuaje', common.mascota_id);
+  })
+);
+
+app.post(
+  '/certificados/libre-miasis',
+  asyncHandler(async (req, res) => {
+    const common = getCommonCertificatePayload(req.body);
+    await pool.query(
+      `INSERT INTO certificados_libre_miasis (
+        mascota_id,
+        propietario_nombre,
+        propietario_documento_tipo,
+        propietario_documento_numero,
+        propietario_direccion,
+        animal_nombre,
+        animal_especie,
+        animal_sexo,
+        animal_condicion_reproductiva,
+        animal_edad,
+        animal_fecha_nacimiento,
+        animal_peso,
+        animal_raza,
+        animal_pelaje,
+        animal_microchip,
+        lugar_fecha
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        common.mascota_id,
+        common.propietario_nombre,
+        common.propietario_documento_tipo,
+        common.propietario_documento_numero,
+        common.propietario_direccion,
+        common.animal_nombre,
+        common.animal_especie,
+        common.animal_sexo,
+        common.animal_condicion_reproductiva,
+        common.animal_edad,
+        common.animal_fecha_nacimiento,
+        common.animal_peso,
+        common.animal_raza,
+        common.animal_pelaje,
+        common.animal_microchip,
+        common.lugar_fecha,
+      ]
+    );
+
+    redirectToCertificates(res, 'libre_miasis', common.mascota_id);
   })
 );
 
 app.get(
   '/certificados/leishmaniasis/:id/pdf',
   asyncHandler(async (req, res) => {
-    const [rows] = await pool.query(
-      `SELECT certificados_leishmaniasis.*,
-              mascotas.nombre AS mascota_nombre,
-              mascotas.especie AS mascota_especie,
-              mascotas.raza AS mascota_raza,
-              mascotas.sexo AS mascota_sexo,
-              clientes.nombre AS cliente_nombre
-       FROM certificados_leishmaniasis
-       JOIN mascotas ON mascotas.id = certificados_leishmaniasis.mascota_id
-       JOIN clientes ON clientes.id = mascotas.cliente_id
-       WHERE certificados_leishmaniasis.id = ?`,
-      [req.params.id]
-    );
+    const certificado = await loadCertificateRecordById('certificados_leishmaniasis', req.params.id);
 
-    if (!rows.length) {
+    if (!certificado) {
       return res.status(404).render('error', {
         message: 'El certificado solicitado no existe.',
       });
     }
 
-    const certificado = rows[0];
     const configuracionClinica = await getConfiguracionClinica();
-    const pdfBuffer = generateLeishmaniasisCertificatePdf({
+    const pdfBuffer = generateLeishmaniasisCertificatePdf({ certificado, configuracionClinica });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="certificado-leishmaniasis-${certificado.id}.pdf"`);
+    res.send(pdfBuffer);
+  })
+);
+
+app.get(
+  '/certificados/tratamiento-antiparasitario/:id/pdf',
+  asyncHandler(async (req, res) => {
+    const certificado = await loadCertificateRecordById(
+      'certificados_tratamientos_antiparasitarios',
+      req.params.id
+    );
+
+    if (!certificado) {
+      return res.status(404).render('error', {
+        message: 'El certificado solicitado no existe.',
+      });
+    }
+
+    const configuracionClinica = await getConfiguracionClinica();
+    const pdfBuffer = generateTratamientoAntiparasitarioCertificatePdf({
       certificado,
       configuracionClinica,
     });
-
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `inline; filename="certificado-leishmaniasis-${certificado.id}.pdf"`
+      `inline; filename="certificado-tratamiento-antiparasitario-${certificado.id}.pdf"`
     );
+    res.send(pdfBuffer);
+  })
+);
+
+app.get(
+  '/certificados/implantacion-microchip-tatuaje/:id/pdf',
+  asyncHandler(async (req, res) => {
+    const certificado = await loadCertificateRecordById(
+      'certificados_implantacion_microchip_tatuaje',
+      req.params.id
+    );
+
+    if (!certificado) {
+      return res.status(404).render('error', {
+        message: 'El certificado solicitado no existe.',
+      });
+    }
+
+    const configuracionClinica = await getConfiguracionClinica();
+    const pdfBuffer = generateImplantacionMicrochipCertificatePdf({
+      certificado,
+      configuracionClinica,
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="certificado-implantacion-microchip-${certificado.id}.pdf"`
+    );
+    res.send(pdfBuffer);
+  })
+);
+
+app.get(
+  '/certificados/lectura-microchip-tatuaje/:id/pdf',
+  asyncHandler(async (req, res) => {
+    const certificado = await loadCertificateRecordById(
+      'certificados_lectura_microchip_tatuaje',
+      req.params.id
+    );
+
+    if (!certificado) {
+      return res.status(404).render('error', {
+        message: 'El certificado solicitado no existe.',
+      });
+    }
+
+    const configuracionClinica = await getConfiguracionClinica();
+    const pdfBuffer = generateLecturaMicrochipCertificatePdf({
+      certificado,
+      configuracionClinica,
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="certificado-lectura-microchip-${certificado.id}.pdf"`
+    );
+    res.send(pdfBuffer);
+  })
+);
+
+app.get(
+  '/certificados/libre-miasis/:id/pdf',
+  asyncHandler(async (req, res) => {
+    const certificado = await loadCertificateRecordById('certificados_libre_miasis', req.params.id);
+
+    if (!certificado) {
+      return res.status(404).render('error', {
+        message: 'El certificado solicitado no existe.',
+      });
+    }
+
+    const configuracionClinica = await getConfiguracionClinica();
+    const pdfBuffer = generateLibreMiasisCertificatePdf({ certificado, configuracionClinica });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="certificado-libre-miasis-${certificado.id}.pdf"`);
     res.send(pdfBuffer);
   })
 );
@@ -1883,6 +2613,10 @@ const startServer = async () => {
   await ensureHistoriaClinicaDocumentosTable();
   await ensureConfiguracionClinicaTable();
   await ensureCertificadosLeishmaniasisTable();
+  await ensureCertificadosTratamientosAntiparasitariosTable();
+  await ensureCertificadosImplantacionMicrochipTable();
+  await ensureCertificadosLecturaMicrochipTable();
+  await ensureCertificadosLibreMiasisTable();
   await ensureVacunasHasWhatsappReminderFlag();
   app.listen(PORT, () => {
     console.log(`Servidor iniciado en http://localhost:${PORT}`);

@@ -269,6 +269,24 @@ body {
   border-top: 1px solid var(--vet-border);
 }
 
+.cert-types-card .nav-link {
+  border: 1px solid var(--vet-border);
+  border-radius: 18px;
+  padding: 1rem;
+  background: #fff;
+  color: var(--vet-text-dark);
+}
+
+.cert-types-card .nav-link.active {
+  background: linear-gradient(135deg, rgba(47, 141, 100, 0.14), rgba(243, 154, 60, 0.18));
+  color: var(--vet-text-dark);
+  border-color: rgba(47, 141, 100, 0.35);
+}
+
+.cert-grid-span-2 {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 767px) {
   .cert-grid {
     grid-template-columns: 1fr;

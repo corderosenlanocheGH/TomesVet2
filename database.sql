@@ -112,6 +112,36 @@ CREATE TABLE IF NOT EXISTS motivos_turno (
   nombre VARCHAR(120) NOT NULL UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS certificados_leishmaniasis (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  mascota_id INT NOT NULL,
+  propietario_nombre VARCHAR(255) NOT NULL,
+  propietario_documento_tipo VARCHAR(80),
+  propietario_documento_numero VARCHAR(80),
+  propietario_direccion VARCHAR(255),
+  animal_nombre VARCHAR(120) NOT NULL,
+  animal_especie VARCHAR(80) NOT NULL DEFAULT 'Canino',
+  animal_sexo VARCHAR(20),
+  animal_condicion_reproductiva VARCHAR(20),
+  animal_edad VARCHAR(80),
+  animal_fecha_nacimiento DATE,
+  animal_peso VARCHAR(40),
+  animal_raza VARCHAR(120),
+  animal_pelaje VARCHAR(120),
+  animal_microchip VARCHAR(120),
+  fecha_toma_muestra DATE,
+  metodo_diagnostico VARCHAR(255),
+  laboratorio_diagnostico VARCHAR(255),
+  fecha_resultado DATE,
+  resultado VARCHAR(80) NOT NULL DEFAULT 'NEGATIVO',
+  lugar_fecha VARCHAR(255),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_certificado_leishmaniasis_mascota
+    FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
+    ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS mascotas_especies (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(120) NOT NULL UNIQUE

@@ -175,15 +175,28 @@ const createPdfCanvas = () => {
 };
 
 const getCertificateBranding = (configuracionClinica) => {
-  const clinicName =
-    normalizeText(configuracionClinica?.veterinaria_nombre) || 'Clínica Veterinaria';
+  const clinicName = normalizeText(configuracionClinica?.veterinaria_nombre);
   const medicaNombre = normalizeText(configuracionClinica?.medica_nombre);
   const medicaMatricula = normalizeText(configuracionClinica?.medica_matricula);
-  const membrete = medicaNombre
-    ? `${medicaNombre}${medicaMatricula ? ` · Matrícula ${medicaMatricula}` : ''}`
-    : 'Membrete del profesional actuante y/o clínica veterinaria';
+  const brandingLines = [];
 
-  return { clinicName, membrete };
+  if (medicaNombre) {
+    brandingLines.push(medicaNombre);
+  }
+  if (medicaMatricula) {
+    brandingLines.push(`Matrícula ${medicaMatricula}`);
+  }
+  if (clinicName) {
+    brandingLines.push(clinicName);
+  }
+  if (!brandingLines.length) {
+    brandingLines.push('Clínica Veterinaria');
+  }
+
+  return {
+    clinicName: clinicName || 'Clínica Veterinaria',
+    membrete: brandingLines.join('\n'),
+  };
 };
 
 const drawCertificateHeader = ({
@@ -255,60 +268,65 @@ const drawCertificateOwnerAnimalSection = ({
       line(...args);
     }
   };
+  const buildInlineValue = (label, value) => {
+    const normalized = normalizeText(value);
+    return normalized ? `${label}: ${normalized}` : '';
+  };
+  const buildJoinedInlineValue = (entries) => entries.filter(Boolean).join('    ');
+  const ownerDocumentValue = [
+    normalizeText(certificado.propietario_documento_tipo),
+    normalizeText(certificado.propietario_documento_numero),
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const animalIdentityValues = [
+    normalizeText(certificado.animal_especie).toUpperCase(),
+    sexo.toUpperCase(),
+    condicion.toUpperCase(),
+  ].filter(Boolean);
+  const ageBirthLine = buildJoinedInlineValue([
+    buildInlineValue('Edad (Años y meses)', certificado.animal_edad),
+    buildInlineValue('Fecha de nacimiento', formatShortDate(certificado.animal_fecha_nacimiento)),
+  ]);
+  const breedCoatLine = buildJoinedInlineValue([
+    buildInlineValue('Raza', certificado.animal_raza),
+    buildInlineValue('Pelaje', certificado.animal_pelaje),
+  ]);
 
-  text(55, 176, `Nombre y Apellido del propietario: ${certificado.propietario_nombre || ''}`, {
+  text(55, 176, buildInlineValue('Nombre y Apellido del propietario', certificado.propietario_nombre), {
     size: 9,
   });
   safeLine(245, 179, 540, 179, 0.7);
   text(
     55,
     196,
-    `Tipo y N° de Documento de Identidad o Pasaporte: ${[
-      certificado.propietario_documento_tipo,
-      certificado.propietario_documento_numero,
-    ]
-      .filter(Boolean)
-      .join(' ')}`,
+    buildInlineValue('Tipo y N° de Documento de Identidad o Pasaporte', ownerDocumentValue),
     { size: 9 }
   );
   safeLine(290, 199, 540, 199, 0.7);
-  text(55, 216, `Dirección: ${certificado.propietario_direccion || ''}`, { size: 9 });
+  text(55, 216, buildInlineValue('Dirección', certificado.propietario_direccion), { size: 9 });
   safeLine(100, 219, 540, 219, 0.7);
 
   text(55, 250, 'Datos del animal:', { font: 'F2', size: 10 });
-  text(55, 272, `Nombre: ${certificado.animal_nombre || ''}`, { size: 9 });
+  text(55, 272, buildInlineValue('Nombre', certificado.animal_nombre), { size: 9 });
   safeLine(95, 275, 540, 275, 0.7);
-  text(84, 297, normalizeText(certificado.animal_especie).toUpperCase(), { size: 9 });
-  if (databaseOnly) {
-    text(265, 297, sexo.toUpperCase(), { size: 9 });
-    text(420, 297, condicion.toUpperCase(), { size: 9 });
-  } else {
-    const sexoOpuesto = sexo === 'Macho' ? 'Hembra' : 'Macho';
-    const condicionOpuesta = condicion === 'Entero' ? 'Castrado' : 'Entero';
-    text(265, 297, `${sexo.toUpperCase()} / ${sexoOpuesto.toUpperCase()}`, { size: 9 });
-    text(420, 297, `${condicion.toUpperCase()} / ${condicionOpuesta.toUpperCase()}`, { size: 9 });
+  if (animalIdentityValues.length) {
+    text(84, 297, animalIdentityValues.join(' / '), { size: 9 });
   }
   if (!databaseOnly) {
     text(355, 313, '(Tachar lo que no corresponda)', { size: 7, align: 'center' });
   }
-  text(
-    55,
-    340,
-    `Edad (Años y meses): ${certificado.animal_edad || ''}    Fecha de nacimiento: ${
-      formatShortDate(certificado.animal_fecha_nacimiento)
-    }`,
-    { size: 9 }
-  );
+  text(55, 340, ageBirthLine, { size: 9 });
   safeLine(162, 343, 335, 343, 0.7);
   safeLine(445, 343, 540, 343, 0.7);
-  text(55, 360, `Peso: ${certificado.animal_peso || ''}`, { size: 9 });
+  text(55, 360, buildInlineValue('Peso', certificado.animal_peso), { size: 9 });
   safeLine(85, 363, 205, 363, 0.7);
-  text(55, 380, `Raza: ${certificado.animal_raza || ''}    Pelaje: ${certificado.animal_pelaje || ''}`, {
+  text(55, 380, breedCoatLine, {
     size: 9,
   });
   safeLine(84, 383, 292, 383, 0.7);
   safeLine(338, 383, 540, 383, 0.7);
-  text(55, 400, `N° de Microchip (si corresponde): ${certificado.animal_microchip || ''}`, {
+  text(55, 400, buildInlineValue('N° de Microchip (si corresponde)', certificado.animal_microchip), {
     size: 9,
   });
   safeLine(200, 403, 540, 403, 0.7);
@@ -328,6 +346,11 @@ const finalizeCertificatePdf = ({ pageWidth, pageHeight, cmds }) =>
 
 const generateLeishmaniasisCertificatePdf = ({ certificado, configuracionClinica }) => {
   const { pageWidth, pageHeight, cmds, text, line, rect, paragraph } = createPdfCanvas();
+  const buildInlineValue = (label, value) => {
+    const normalized = normalizeText(value);
+    return normalized ? `${label}: ${normalized}` : '';
+  };
+  const resultadoFinal = (certificado.resultado || CERTIFICADO_LEISHMANIASIS_RESULTADO).toUpperCase();
 
   drawCertificateHeader({
     text,
@@ -336,11 +359,11 @@ const generateLeishmaniasisCertificatePdf = ({ certificado, configuracionClinica
     paragraph,
     configuracionClinica,
     titleLines: [
-      'CERTIFICADO PARA PRUEBA DE DETECCIÓN DE LA RESPUESTA',
+      'CERTIFICADO PARA PRUEBA DETECCIÓN DE LA RESPUESTA',
       'INMUNITARIA NEGATIVA A LEISHMANIASIS',
     ],
-    showGuideText: false,
-    brandingBox: { x: 34, y: 28, width: 235, height: 42 },
+    showGuideText: true,
+    brandingBox: { x: 34, y: 28, width: 235, height: 50 },
   });
   drawCertificateOwnerAnimalSection({
     text,
@@ -351,29 +374,30 @@ const generateLeishmaniasisCertificatePdf = ({ certificado, configuracionClinica
   });
 
   text(55, 435, 'DATOS DE LA MUESTRA', { font: 'F2', size: 10 });
-  text(
-    55,
-    463,
-    `Fecha de toma de muestra: ${formatShortDate(certificado.fecha_toma_muestra)}`,
-    { size: 9 }
-  );
-  text(55, 485, `Método diagnóstico empleado: ${certificado.metodo_diagnostico || ''}`, { size: 9 });
-  text(55, 505, `Laboratorio diagnóstico: ${certificado.laboratorio_diagnostico || ''}`, { size: 9 });
+  text(55, 463, buildInlineValue('Fecha de toma de muestra', formatShortDate(certificado.fecha_toma_muestra)), {
+    size: 9,
+  });
+  text(55, 485, buildInlineValue('Método diagnóstico empleado', certificado.metodo_diagnostico), { size: 9 });
+  text(55, 505, buildInlineValue('Laboratorio diagnóstico', certificado.laboratorio_diagnostico), { size: 9 });
 
   text(55, 545, 'RESULTADO', { font: 'F2', size: 10 });
-  text(
-    55,
-    575,
-    `Fecha de Resultado: ${formatShortDate(certificado.fecha_resultado)}`,
-    { size: 9 }
-  );
-  rect(50, 592, 490, 38, 0.8);
-  text(55, 613, (certificado.resultado || CERTIFICADO_LEISHMANIASIS_RESULTADO).toUpperCase(), {
-    font: 'F2',
-    size: 11,
+  text(55, 575, buildInlineValue('Fecha de Resultado', formatShortDate(certificado.fecha_resultado)), {
+    size: 9,
   });
+  rect(50, 595, 490, 28, 0.8);
+  paragraph(
+    58,
+    608,
+    `Por medio de la presente se certifica que el análisis de Leishmaniasis arrojó resultado ${resultadoFinal}.`,
+    {
+      font: 'F2',
+      size: 9,
+      lineHeight: 11,
+      maxChars: 82,
+    }
+  );
 
-  text(55, 648, `${certificado.lugar_fecha || ''}`, { size: 9 });
+  text(55, 648, buildInlineValue('Lugar y fecha', certificado.lugar_fecha), { size: 9 });
   text(400, 705, 'Firma y Sello del Profesional Actuante', { size: 9, align: 'center' });
   line(340, 692, 520, 692, 0.7);
   drawCertificateFooter({ text, line });

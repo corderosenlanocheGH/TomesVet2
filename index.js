@@ -67,11 +67,65 @@ const formatShortDate = (value = '') => {
   return value;
 };
 
-const escapePdfText = (value = '') =>
-  value
-    .replace(/\\/g, '\\\\')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)');
+const PDF_WIN_ANSI_EXTRA_BYTES = {
+  '€': 0x80,
+  '‚': 0x82,
+  'ƒ': 0x83,
+  '„': 0x84,
+  '…': 0x85,
+  '†': 0x86,
+  '‡': 0x87,
+  'ˆ': 0x88,
+  '‰': 0x89,
+  'Š': 0x8a,
+  '‹': 0x8b,
+  'Œ': 0x8c,
+  'Ž': 0x8e,
+  '‘': 0x91,
+  '’': 0x92,
+  '“': 0x93,
+  '”': 0x94,
+  '•': 0x95,
+  '–': 0x96,
+  '—': 0x97,
+  '˜': 0x98,
+  '™': 0x99,
+  'š': 0x9a,
+  '›': 0x9b,
+  'œ': 0x9c,
+  'ž': 0x9e,
+  'Ÿ': 0x9f,
+};
+
+const encodePdfText = (value = '') => {
+  const normalized = (value || '').toString().normalize('NFC');
+  let encoded = '';
+
+  for (const char of normalized) {
+    const codePoint = char.codePointAt(0);
+    const mappedByte = PDF_WIN_ANSI_EXTRA_BYTES[char];
+    const byte = mappedByte ?? (codePoint <= 0xff ? codePoint : null);
+
+    if (byte === null) {
+      encoded += '?';
+      continue;
+    }
+
+    if (byte === 0x28 || byte === 0x29 || byte === 0x5c) {
+      encoded += `\\${String.fromCharCode(byte)}`;
+      continue;
+    }
+
+    if (byte < 0x20 || byte > 0x7e) {
+      encoded += `\\${byte.toString(8).padStart(3, '0')}`;
+      continue;
+    }
+
+    encoded += String.fromCharCode(byte);
+  }
+
+  return encoded;
+};
 
 const formatDateTimeValue = (value = '') => {
   if (!value) return '';
@@ -90,14 +144,18 @@ const buildSimplePdf = ({ width = 595.28, height = 841.89, content = '' }) => {
     return objects.length;
   };
 
-  const contentBuffer = Buffer.from(content, 'latin1');
+  const contentBuffer = Buffer.from(content, 'binary');
   const catalogId = addObject('<< /Type /Catalog /Pages 2 0 R >>');
   const pagesId = addObject('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
   const pageId = addObject(
     `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`
   );
-  const fontRegularId = addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
-  const fontBoldId = addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  const fontRegularId = addObject(
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'
+  );
+  const fontBoldId = addObject(
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'
+  );
   const contentId = addObject(`<< /Length ${contentBuffer.length} >>\nstream\n${content}\nendstream`);
 
   const ordered = [catalogId, pagesId, pageId, fontRegularId, fontBoldId, contentId];
@@ -105,18 +163,18 @@ const buildSimplePdf = ({ width = 595.28, height = 841.89, content = '' }) => {
   const offsets = [0];
 
   ordered.forEach((objectId) => {
-    offsets[objectId] = Buffer.byteLength(pdf, 'latin1');
+    offsets[objectId] = Buffer.byteLength(pdf, 'binary');
     pdf += `${objectId} 0 obj\n${objects[objectId - 1]}\nendobj\n`;
   });
 
-  const xrefOffset = Buffer.byteLength(pdf, 'latin1');
+  const xrefOffset = Buffer.byteLength(pdf, 'binary');
   pdf += `xref\n0 ${objects.length + 1}\n`;
   pdf += '0000000000 65535 f \n';
   for (let index = 1; index <= objects.length; index += 1) {
     pdf += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`;
   }
   pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-  return Buffer.from(pdf, 'latin1');
+  return Buffer.from(pdf, 'binary');
 };
 
 const createPdfCanvas = () => {
@@ -126,7 +184,7 @@ const createPdfCanvas = () => {
   const toPdfY = (topY) => pageHeight - topY;
   const text = (x, topY, value, options = {}) => {
     const { font = 'F1', size = 10, align = 'left' } = options;
-    const rawText = escapePdfText(value || '');
+    const rawText = encodePdfText(value || '');
     if (!rawText) {
       return;
     }
@@ -206,7 +264,6 @@ const drawCertificateHeader = ({
   paragraph,
   configuracionClinica,
   titleLines,
-  showGuideText = true,
   brandingBox = { x: 34, y: 33, width: 210, height: 26 },
 }) => {
   const { clinicName, membrete } = getCertificateBranding(configuracionClinica);
@@ -233,20 +290,7 @@ const drawCertificateHeader = ({
     lineHeight: 9,
   });
 
-  if (showGuideText) {
-    text(
-      297.5,
-      85,
-      'Aclaración: Modelos de certificados orientativos sugeridos. En caso de utilizar modelos propios, estos',
-      { size: 7, align: 'center' }
-    );
-    text(297.5, 94, 'deberán contener los datos mínimos que figuran en los modelos.', {
-      size: 7,
-      align: 'center',
-    });
-  }
-
-  let currentY = showGuideText ? 122 : 110;
+  let currentY = 110;
   titleLines.forEach((title) => {
     text(297.5, currentY, title, { font: 'F2', size: 11, align: 'center' });
     currentY += 14;
@@ -362,7 +406,6 @@ const generateLeishmaniasisCertificatePdf = ({ certificado, configuracionClinica
       'CERTIFICADO PARA PRUEBA DETECCIÓN DE LA RESPUESTA',
       'INMUNITARIA NEGATIVA A LEISHMANIASIS',
     ],
-    showGuideText: true,
     brandingBox: { x: 34, y: 28, width: 235, height: 50 },
   });
   drawCertificateOwnerAnimalSection({

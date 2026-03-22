@@ -93,12 +93,13 @@
                   <% if (whatsappUrl) { %>
                     <a
                       class="btn btn-sm btn-success whatsapp-send-btn"
+                      aria-label="Enviar WhatsApp"
+                      title="Enviar WhatsApp"
                       href="<%= whatsappUrl %>"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <i class="bi bi-whatsapp"></i>
-                      Enviar WhatsApp
+                      <i class="bi bi-whatsapp" aria-hidden="true"></i>
                     </a>
                   <% } else { %>
                     <span class="text-muted small">Sin número válido</span>

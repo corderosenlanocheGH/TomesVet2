@@ -137,7 +137,9 @@ CREATE TABLE IF NOT EXISTS certificados_leishmaniasis (
   lugar_fecha VARCHAR(255),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_certificados_leishmaniasis_mascota_id (mascota_id)
+  CONSTRAINT fk_certificado_leishmaniasis_mascota
+    FOREIGN KEY (mascota_id) REFERENCES mascotas(id)
+    ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS mascotas_especies (
